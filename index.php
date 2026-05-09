@@ -166,12 +166,20 @@
                             text: data.message
                         };
 
-                        if (data.success && !this.isLogin) {
-                            setTimeout(() => {
-                                this.isLogin = true;
-                                this.message = null;
-                                this.$nextTick(() => lucide.createIcons());
-                            }, 2000);
+                        if (data.success) {
+                            if (this.isLogin) {
+                                // Redirect to dashboard on successful login
+                                setTimeout(() => window.location.href = 'dashboard.php', 1000);
+                            } else {
+                                // Clear form on signup success to allow login
+                                setTimeout(() => {
+                                    this.isLogin = true;
+                                    this.message = null;
+                                    this.email = '';
+                                    this.password = '';
+                                    this.$nextTick(() => lucide.createIcons());
+                                }, 2000);
+                            }
                         }
                     } catch (err) {
                         this.message = {
