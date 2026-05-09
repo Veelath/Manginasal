@@ -43,6 +43,22 @@ try {
             exit;
         }
 
+        // 1. Check if Branch already has a manager
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Brnch_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt->execute([$branch_id]);
+        if ($stmt->fetchColumn() > 0) {
+            echo json_encode(['success' => false, 'message' => 'This branch already has a manager assigned.']);
+            exit;
+        }
+
+        // 2. Check if Email already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetchColumn() > 0) {
+            echo json_encode(['success' => false, 'message' => 'A user with this email already exists.']);
+            exit;
+        }
+
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         
         $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass) VALUES (?, ?, ?, ?, ?, 'Branch Manager', ?)");
