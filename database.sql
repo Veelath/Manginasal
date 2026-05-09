@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS STAFF (
     Staff_MobileNum CHAR(11) NOT NULL,
     Staff_Role VARCHAR(20) NOT NULL, -- 'System Admin', 'Branch Manager', 'Kitchen Staff'
     Staff_Pass VARCHAR(255) NOT NULL,
-    Staff_Status CHAR(1) DEFAULT 'Y',
+    Staff_Status VARCHAR(15) DEFAULT 'Active',
     FOREIGN KEY (Staff_Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE SET NULL
 );
 

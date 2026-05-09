@@ -61,10 +61,24 @@ try {
 
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         
-        $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass) VALUES (?, ?, ?, ?, ?, 'Branch Manager', ?)");
+        $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass, Staff_Status) VALUES (?, ?, ?, ?, ?, 'Branch Manager', ?, 'Active')");
         $stmt->execute([$branch_id, $fname, $lname, $email, $mobile, $hashed]);
 
         echo json_encode(['success' => true, 'message' => 'Manager account created!']);
+    }
+    elseif ($action === 'update_manager_status') {
+        $id = $data['id'] ?? null;
+        $status = $data['status'] ?? '';
+
+        if (!$id || !$status) {
+            echo json_encode(['success' => false, 'message' => 'ID and status required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE STAFF SET Staff_Status = ? WHERE Staff_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt->execute([$status, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Manager status updated!']);
     }
     elseif ($action === 'create_menu') {
         $name = $data['name'] ?? '';

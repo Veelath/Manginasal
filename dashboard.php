@@ -113,6 +113,19 @@ $user_id = $_SESSION['user_id'];
         if(data.success) this.fetchBranchMenu();
     },
 
+    async updateManagerStatus(id, status) {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_manager_status', id, status })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchManagers();
+            this.fetchBranches();
+        }
+    },
+
     async submitBranch() {
         const res = await fetch('system_admin_api.php', {
             method: 'POST',
@@ -197,9 +210,13 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="store" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen">Manage Branches</span>
                 </a>
-                <a href="#" @click="activeTab = 'menu'" :class="activeTab === 'menu' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'menu'" :class="activeTab === 'menu' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/20 transition-colors">
                     <i data-lucide="utensils-cross-lines" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen">Global Menu</span>
+                </a>
+                <a href="#" @click="activeTab = 'manage_managers'" :class="activeTab === 'manage_managers' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen">Manage Managers</span>
                 </a>
             <?php endif; ?>
 
@@ -419,6 +436,62 @@ $user_id = $_SESSION['user_id'];
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'manage_managers'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-slate-800 font-poppins">Manager Workforce</h2>
+                <button @click="showManagerModal = true" class="bg-[#ffec00] text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#e6d400] transition-colors">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Create Manager</span>
+                </button>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="manager in managers" :key="manager.Staff_ID">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4">
+                                    <div class="font-bold text-slate-800" x-text="`${manager.Staff_FName} ${manager.Staff_LName}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="manager.Staff_MobileNum"></div>
+                                </td>
+                                <td class="p-4 text-sm text-slate-600" x-text="manager.Staff_Email"></td>
+                                <td class="p-4">
+                                    <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
+                                </td>
+                                <td class="p-4">
+                                    <span :class="{
+                                        'bg-green-100 text-green-700': manager.Staff_Status === 'Active',
+                                        'bg-red-100 text-red-700': manager.Staff_Status === 'Resigned',
+                                        'bg-orange-100 text-orange-700': manager.Staff_Status === 'Suspended'
+                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Staff_Status"></span>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <div class="flex justify-end gap-2" x-data="{ open: false }">
+                                        <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                                            <i data-lucide="edit-2" class="w-4 h-4 text-slate-400"></i>
+                                        </button>
+                                        <div x-show="open" @click.away="open = false" class="absolute mt-8 bg-white border rounded-xl shadow-xl z-10 py-2 w-32">
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-green-600">Set Active</button>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-orange-600">Suspend</button>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-red-600">Resign</button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
 
