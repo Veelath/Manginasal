@@ -71,10 +71,28 @@ CREATE TABLE IF NOT EXISTS MENU_ITEM (
     Menu_ID INT AUTO_INCREMENT PRIMARY KEY,
     Menu_Category VARCHAR(35) NOT NULL,
     Menu_Name VARCHAR(50) NOT NULL,
+    Menu_Size VARCHAR(20) DEFAULT 'Standard',
     Menu_Description VARCHAR(200),
     Menu_Price DECIMAL(8,2) NOT NULL,
-    Menu_Avail CHAR(1) DEFAULT 'Y'
+    Menu_Status CHAR(1) DEFAULT 'Y'
 );
+
+CREATE TABLE IF NOT EXISTS BRANCH_MENU (
+    Brnch_ID INT,
+    Menu_ID INT,
+    Is_Available CHAR(1) DEFAULT 'Y',
+    PRIMARY KEY (Brnch_ID, Menu_ID),
+    FOREIGN KEY (Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE CASCADE,
+    FOREIGN KEY (Menu_ID) REFERENCES MENU_ITEM(Menu_ID) ON DELETE CASCADE
+);
+
+-- Seed Initial Menus
+INSERT INTO MENU_ITEM (Menu_Category, Menu_Name, Menu_Description, Menu_Price) VALUES 
+('Chicken', 'PM1 - Chicken Inasal Paa', 'Signature grilled chicken leg/thigh with rice.', 145.00),
+('Chicken', 'PM2 - Chicken Inasal Pecho', 'Signature grilled chicken breast with rice.', 155.00),
+('Pork', 'Sizzling Pork Sisig', 'Tasty pork sisig with egg.', 130.00),
+('Dessert', 'Halo-Halo Small', 'Refreshing Filipino dessert.', 65.00),
+('Sides', 'Extra Rice', 'Unlimited rice option available in-store.', 25.00);
 
 -- 7. ORDERS TABLE (Using 'orders' because 'ORDER' is reserved)
 CREATE TABLE IF NOT EXISTS orders (

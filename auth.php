@@ -47,14 +47,14 @@ try {
 
         // 2. If not found, check Staff Table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as name, Staff_Pass as pass, Staff_Role as role FROM STAFF WHERE Staff_Email = ?");
+            $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as name, Staff_Pass as pass, Staff_Role as role, Staff_Brnch_ID as branch_id FROM STAFF WHERE Staff_Email = ?");
             $stmt->execute([$email]); 
             $user = $stmt->fetch();
         }
 
         // 3. If still not found, check Rider Table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as name, Rider_Pass as pass, 'Driver' as role FROM RIDER WHERE Rider_Email = ?");
+            $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as name, Rider_Pass as pass, 'Driver' as role, Rider_Brnch_ID as branch_id FROM RIDER WHERE Rider_Email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
         }
@@ -67,6 +67,7 @@ try {
         session_start();
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
+        $_SESSION['branch_id'] = $user['branch_id'] ?? null;
 
         echo json_encode(['success' => true, 'message' => "Welcome! Logged in as " . $user['role']]);
     }

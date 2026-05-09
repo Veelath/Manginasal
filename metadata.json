@@ -1,6 +1,6 @@
 {
   "name": "Mang Inasal Digital",
-  "description": "A modern, brand-inspired login and signup experience for Mang Inasal, featuring a split-screen design and vibrant brand colors.",
+  "description": "A comprehensive management system for Mang Inasal featuring multi-role dashboards for System Admins, Branch Managers, Kitchen Staff, and Drivers. Supports branch creation, manager assignment, global menu management, and branch-level inventory control.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
