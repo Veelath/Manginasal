@@ -72,7 +72,31 @@ try {
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_branches') {
-        $stmt = $pdo->query("SELECT * FROM BRANCH");
+        $stmt = $pdo->query("
+            SELECT b.*, s.Staff_FName, s.Staff_LName 
+            FROM BRANCH b 
+            LEFT JOIN STAFF s ON b.Brnch_ID = s.Staff_Brnch_ID AND s.Staff_Role = 'Branch Manager'
+        ");
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+    }
+    elseif ($action === 'get_stats') {
+        $branchCount = $pdo->query("SELECT COUNT(*) FROM BRANCH")->fetchColumn();
+        $managerCount = $pdo->query("SELECT COUNT(*) FROM STAFF WHERE Staff_Role = 'Branch Manager'")->fetchColumn();
+        echo json_encode([
+            'success' => true, 
+            'stats' => [
+                'branches' => $branchCount,
+                'managers' => $managerCount
+            ]
+        ]);
+    }
+    elseif ($action === 'get_managers') {
+        $stmt = $pdo->query("
+            SELECT s.*, b.Brnch_Name 
+            FROM STAFF s 
+            LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
+            WHERE s.Staff_Role = 'Branch Manager'
+        ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
 } catch (Exception $e) {

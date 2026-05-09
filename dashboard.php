@@ -29,10 +29,12 @@ $user_id = $_SESSION['user_id'];
     role: '<?php echo $role; ?>',
     activeTab: 'overview',
     branches: [],
+    managers: [],
+    stats: { branches: 0, managers: 0 },
     showBranchModal: false,
     showManagerModal: false,
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
-    newManager: { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: 'password' },
+    newManager: { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: '' },
     newMenu: { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard' },
     newStaff: { fname: '', lname: '', email: '', mobile: '', role: 'Kitchen Staff', password: 'password' },
     newRider: { fname: '', lname: '', email: '', mobile: '', password: 'password' },
@@ -48,10 +50,30 @@ $user_id = $_SESSION['user_id'];
         if(this.role === 'System Admin') {
             this.fetchBranches();
             this.fetchMenu();
+            this.fetchStats();
+            this.fetchManagers();
         }
         if(this.role === 'Branch Manager') {
             this.fetchBranchMenu();
         }
+    },
+
+    async fetchManagers() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_managers' })
+        });
+        const data = await res.json();
+        if(data.success) this.managers = data.data;
+    },
+
+    async fetchStats() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_stats' })
+        });
+        const data = await res.json();
+        if(data.success) this.stats = data.stats;
     },
 
     async fetchBranches() {
@@ -100,6 +122,7 @@ $user_id = $_SESSION['user_id'];
         this.message = { success: data.success, text: data.message };
         if(data.success) {
             this.fetchBranches();
+            this.fetchStats();
             this.showBranchModal = false;
         }
     },
@@ -124,7 +147,12 @@ $user_id = $_SESSION['user_id'];
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
-        if(data.success) this.showManagerModal = false;
+        if(data.success) {
+            this.fetchStats();
+            this.fetchManagers();
+            this.fetchBranches(); 
+            this.showManagerModal = false;
+        }
     },
 
     async submitStaff() {
@@ -259,9 +287,15 @@ $user_id = $_SESSION['user_id'];
                         <i data-lucide="store" class="w-6 h-6"></i>
                     </div>
                     <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Branches</h3>
-                    <p class="text-3xl font-black text-slate-800">12</p>
+                    <p class="text-3xl font-black text-slate-800" x-text="stats.branches"></p>
                 </div>
-                <!-- Add more stats -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Managers</h3>
+                    <p class="text-3xl font-black text-slate-800" x-text="stats.managers"></p>
+                </div>
             <?php elseif ($role === 'Branch Manager'): ?>
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
@@ -270,16 +304,14 @@ $user_id = $_SESSION['user_id'];
                     <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Staff Active</h3>
                     <p class="text-3xl font-black text-slate-800">8</p>
                 </div>
-            <?php endif; ?>
-
-            <!-- Example common stat -->
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4">
-                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4">
+                        <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Today's Orders</h3>
+                    <p class="text-3xl font-black text-slate-800">42</p>
                 </div>
-                <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Today's Orders</h3>
-                <p class="text-3xl font-black text-slate-800">42</p>
-            </div>
+            <?php endif; ?>
         </section>
 
         <!-- Dynamic Role Content -->
@@ -343,13 +375,50 @@ $user_id = $_SESSION['user_id'];
                             </span>
                         </div>
                         <h3 class="font-bold text-slate-800 text-lg mb-1" x-text="branch.Brnch_Name"></h3>
-                        <p class="text-slate-500 text-sm mb-4" x-text="`${branch.Brnch_Street}, ${branch.Brnch_Brgy}, ${branch.Brnch_City}`"></p>
+                        <p class="text-slate-500 text-sm mb-2" x-text="`${branch.Brnch_Street}, ${branch.Brnch_Brgy}, ${branch.Brnch_City}`"></p>
+                        
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                <i data-lucide="user" class="w-3 h-3"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600" x-text="branch.Staff_FName ? `${branch.Staff_FName} ${branch.Staff_LName}` : 'No Manager Assigned'"></span>
+                        </div>
+
                         <div class="flex items-center gap-2 text-xs text-slate-400">
                             <i data-lucide="map-pin" class="w-3 h-3"></i>
                             <span x-text="`${branch.Brnch_Province} (${branch.Brnch_Radius}km radius)`"></span>
                         </div>
                     </div>
                 </template>
+            </div>
+
+            <!-- Managers Section -->
+            <div class="mt-12">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-slate-800 font-poppins">Branch Managers</h2>
+                </div>
+                <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Assigned Branch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="manager in managers" :key="manager.Staff_ID">
+                                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                    <td class="p-4 font-bold text-slate-800" x-text="`${manager.Staff_FName} ${manager.Staff_LName}`"></td>
+                                    <td class="p-4 text-sm text-slate-600" x-text="manager.Staff_Email"></td>
+                                    <td class="p-4">
+                                        <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -392,6 +461,85 @@ $user_id = $_SESSION['user_id'];
         </div>
 
         <!-- System Admin Modals -->
+        <div x-show="showBranchModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showBranchModal = false">
+                <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
+                    <h3 class="font-black text-xl font-poppins capitalize">Add New Branch</h3>
+                    <button @click="showBranchModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Branch Name</label>
+                        <input type="text" x-model="newBranch.name" placeholder="Main Branch" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
+                            <input type="text" x-model="newBranch.city" placeholder="Manila" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Province</label>
+                            <input type="text" x-model="newBranch.province" placeholder="Metro Manila" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Barangay</label>
+                        <input type="text" x-model="newBranch.brgy" placeholder="Brgy 1" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Street</label>
+                        <input type="text" x-model="newBranch.street" placeholder="P. Gomez St" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <button @click="submitBranch()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Branch</button>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showManagerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showManagerModal = false">
+                <div class="p-6 bg-[#ffec00] text-black flex justify-between items-center">
+                    <h3 class="font-black text-xl font-poppins capitalize">Create Manager Account</h3>
+                    <button @click="showManagerModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">First Name</label>
+                            <input type="text" x-model="newManager.fname" placeholder="Juan" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Last Name</label>
+                            <input type="text" x-model="newManager.lname" placeholder="Dela Cruz" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                        <input type="email" x-model="newManager.email" placeholder="manager@inasal.com" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                            <input type="text" x-model="newManager.mobile" placeholder="09123456789" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Initial Password</label>
+                            <input type="password" x-model="newManager.password" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Assign to Branch</label>
+                        <select x-model="newManager.branch_id" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                            <option value="">Select Branch</option>
+                            <template x-for="branch in branches" :key="branch.Brnch_ID">
+                                <option :value="branch.Brnch_ID" x-text="branch.Brnch_Name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <button @click="submitManager()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
+                </div>
+            </div>
+        </div>
+
         <div x-show="showMenuModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showMenuModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
