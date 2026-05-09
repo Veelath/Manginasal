@@ -64,7 +64,10 @@ $user_id = $_SESSION['user_id'];
             body: JSON.stringify({ action: 'get_managers' })
         });
         const data = await res.json();
-        if(data.success) this.managers = data.data;
+        if(data.success) {
+            this.managers = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
     },
 
     async fetchStats() {
@@ -82,7 +85,10 @@ $user_id = $_SESSION['user_id'];
             body: JSON.stringify({ action: 'get_branches' })
         });
         const data = await res.json();
-        if(data.success) this.branches = data.data;
+        if(data.success) {
+            this.branches = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
     },
 
     async fetchMenu() {
@@ -91,7 +97,10 @@ $user_id = $_SESSION['user_id'];
             body: JSON.stringify({ action: 'get_menu' })
         });
         const data = await res.json();
-        if(data.success) this.menuItems = data.data;
+        if(data.success) {
+            this.menuItems = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
     },
 
     async fetchBranchMenu() {
@@ -100,7 +109,10 @@ $user_id = $_SESSION['user_id'];
             body: JSON.stringify({ action: 'get_menu_availability' })
         });
         const data = await res.json();
-        if(data.success) this.menuItems = data.data;
+        if(data.success) {
+            this.menuItems = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
     },
 
     async toggleAvailability(menuId, currentStatus) {
@@ -471,20 +483,28 @@ $user_id = $_SESSION['user_id'];
                                 </td>
                                 <td class="p-4">
                                     <span :class="{
-                                        'bg-green-100 text-green-700': manager.Staff_Status === 'Active',
-                                        'bg-red-100 text-red-700': manager.Staff_Status === 'Resigned',
+                                        'bg-green-100 text-green-700': manager.Staff_Status === 'Active' || manager.Staff_Status === 'Y',
+                                        'bg-red-100 text-red-700': manager.Staff_Status === 'Resigned' || manager.Staff_Status === 'N',
                                         'bg-orange-100 text-orange-700': manager.Staff_Status === 'Suspended'
-                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Staff_Status"></span>
+                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Staff_Status === 'Y' ? 'Active' : (manager.Staff_Status === 'N' ? 'Inactive' : manager.Staff_Status)"></span>
                                 </td>
                                 <td class="p-4 text-right">
-                                    <div class="flex justify-end gap-2" x-data="{ open: false }">
+                                    <div class="flex justify-end gap-2 relative" x-data="{ open: false }">
                                         <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                                            <i data-lucide="edit-2" class="w-4 h-4 text-slate-400"></i>
+                                            <i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i>
                                         </button>
-                                        <div x-show="open" @click.away="open = false" class="absolute mt-8 bg-white border rounded-xl shadow-xl z-10 py-2 w-32">
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-green-600">Set Active</button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-orange-600">Suspend</button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-red-600">Resign</button>
+                                        <div x-show="open" @click.away="open = false" 
+                                             class="absolute right-0 top-full mt-1 bg-white border border-slate-100 rounded-xl shadow-xl z-[60] py-2 w-32 animate-in fade-in slide-in-from-top-2 duration-200"
+                                             x-transition>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-green-600 flex items-center gap-2">
+                                                <div class="w-2 h-2 rounded-full bg-green-500"></div> Set Active
+                                            </button>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-orange-600 flex items-center gap-2">
+                                                <div class="w-2 h-2 rounded-full bg-orange-500"></div> Suspend
+                                            </button>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-red-600 flex items-center gap-2">
+                                                <div class="w-2 h-2 rounded-full bg-red-500"></div> Resign
+                                            </button>
                                         </div>
                                     </div>
                                 </td>
