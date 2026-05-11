@@ -48,6 +48,52 @@ try {
         $stmt->execute([$branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'get_branch_workforce') {
+        $workforce = [];
+        
+        // Staff
+        $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_Role as role, 'Staff' as source FROM STAFF WHERE Staff_Brnch_ID = ?");
+        $stmt->execute([$branch_id]);
+        $workforce = array_merge($workforce, $stmt->fetchAll());
+        
+        // Riders
+        $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source FROM RIDER WHERE Rider_Brnch_ID = ?");
+        $stmt->execute([$branch_id]);
+        $workforce = array_merge($workforce, $stmt->fetchAll());
+        
+        echo json_encode(['success' => true, 'data' => $workforce]);
+    }
+    elseif ($action === 'delete_workforce') {
+        $id = $data['id'];
+        $source = $data['source']; // 'Staff' or 'Rider'
+        
+        if ($source === 'Staff') {
+            $stmt = $pdo->prepare("DELETE FROM STAFF WHERE Staff_ID = ? AND Staff_Brnch_ID = ?");
+        } else {
+            $stmt = $pdo->prepare("DELETE FROM RIDER WHERE Rider_ID = ? AND Rider_Brnch_ID = ?");
+        }
+        $stmt->execute([$id, $branch_id]);
+        echo json_encode(['success' => true, 'message' => 'Record deleted successfully.']);
+    }
+    elseif ($action === 'get_branch_stats') {
+        // Staff count
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Brnch_ID = ?");
+        $stmt->execute([$branch_id]);
+        $staff_count = $stmt->fetchColumn();
+
+        // Rider count
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM RIDER WHERE Rider_Brnch_ID = ?");
+        $stmt->execute([$branch_id]);
+        $rider_count = $stmt->fetchColumn();
+
+        echo json_encode([
+            'success' => true, 
+            'stats' => [
+                'staff' => $staff_count,
+                'riders' => $rider_count
+            ]
+        ]);
+    }
     elseif ($action === 'toggle_menu') {
         $menu_id = $data['menu_id'];
         $status = $data['status']; // 'Y' or 'N'

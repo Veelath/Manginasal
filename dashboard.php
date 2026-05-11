@@ -31,7 +31,8 @@ $user_id = $_SESSION['user_id'];
     branches: [],
     managers: [],
     allUsers: [],
-    stats: { branches: 0, managers: 0 },
+    workforce: [],
+    stats: { branches: 0, managers: 0, staff: 0, riders: 0 },
     showBranchModal: false,
     showManagerModal: false,
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
@@ -57,6 +58,32 @@ $user_id = $_SESSION['user_id'];
         }
         if(this.role === 'Branch Manager') {
             this.fetchBranchMenu();
+            this.fetchWorkforce();
+            this.fetchBranchStats();
+        }
+    },
+
+    async fetchBranchStats() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_branch_stats' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.stats.staff = data.stats.staff;
+            this.stats.riders = data.stats.riders;
+        }
+    },
+
+    async fetchWorkforce() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_branch_workforce' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.workforce = data.data;
+            this.$nextTick(() => lucide.createIcons());
         }
     },
 
@@ -194,6 +221,19 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    async deletePerson(id, source) {
+        if(!confirm('Are you sure you want to remove this person?')) return;
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_workforce', id, source })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.fetchWorkforce();
+            this.fetchBranchStats();
+        }
+    },
+
     async submitStaff() {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
@@ -201,7 +241,11 @@ $user_id = $_SESSION['user_id'];
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
-        if(data.success) this.showStaffModal = false;
+        if(data.success) {
+            this.fetchWorkforce();
+            this.fetchBranchStats();
+            this.showStaffModal = false;
+        }
     },
 
     async submitRider() {
@@ -211,7 +255,11 @@ $user_id = $_SESSION['user_id'];
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
-        if(data.success) this.showRiderModal = false;
+        if(data.success) {
+            this.fetchWorkforce();
+            this.fetchBranchStats();
+            this.showRiderModal = false;
+        }
     }
 }">
 
@@ -251,13 +299,9 @@ $user_id = $_SESSION['user_id'];
             <?php endif; ?>
 
             <?php if ($role === 'Branch Manager'): ?>
-                <a href="#" @click="activeTab = 'riders'" :class="activeTab === 'riders' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
-                    <i data-lucide="bike" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Manage Riders</span>
-                </a>
-                <a href="#" @click="activeTab = 'staff'" :class="activeTab === 'staff' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
-                    <i data-lucide="user-cog" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Kitchen Staff</span>
+                <a href="#" @click="activeTab = 'workforce'" :class="activeTab === 'workforce' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                    <i data-lucide="users-2" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen">My Workforce</span>
                 </a>
                 <a href="#" @click="activeTab = 'availability'" :class="activeTab === 'availability' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
                     <i data-lucide="shopping-bag" class="w-5 h-5"></i>
@@ -348,15 +392,15 @@ $user_id = $_SESSION['user_id'];
                     <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
                         <i data-lucide="users" class="w-6 h-6"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Staff Active</h3>
-                    <p class="text-3xl font-black text-slate-800">8</p>
+                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Kitchen & Staff</h3>
+                    <p class="text-3xl font-black text-slate-800" x-text="stats.staff"></p>
                 </div>
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4">
-                        <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                        <i data-lucide="bike" class="w-6 h-6"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Today's Orders</h3>
-                    <p class="text-3xl font-black text-slate-800">42</p>
+                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Rider Fleet</h3>
+                    <p class="text-3xl font-black text-slate-800" x-text="stats.riders"></p>
                 </div>
             <?php endif; ?>
         </section>
@@ -511,22 +555,22 @@ $user_id = $_SESSION['user_id'];
                                     </span>
                                 </td>
                                 <td class="p-4 text-right">
-                                    <div class="flex justify-end gap-2 relative z-[100]" x-data="{ open: false }">
+                                    <div class="flex justify-end gap-2 relative" x-data="{ open: false }">
                                         <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
                                             <i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i>
                                         </button>
                                         <div x-show="open" @click.away="open = false" 
-                                             class="absolute right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl z-[110] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
+                                             class="absolute right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[999] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
                                              x-transition x-cloak>
                                             <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Update Account Status</div>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Set as Active
+                                                <div class="w-2 h-2 rounded-full bg-green-500"></div> Set as Active
                                             </button>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspend Account
+                                                <div class="w-2 h-2 rounded-full bg-orange-500"></div> Suspend Account
                                             </button>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Mark as Resigned
+                                                <div class="w-2 h-2 rounded-full bg-red-500"></div> Mark as Resigned
                                             </button>
                                         </div>
                                     </div>
@@ -768,26 +812,56 @@ $user_id = $_SESSION['user_id'];
 
         <!-- Branch Manager Tabs -->
         <?php if ($role === 'Branch Manager'): ?>
-        <div x-show="activeTab === 'riders'" x-cloak>
+        <div x-show="activeTab === 'workforce'" x-cloak>
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 font-poppins">Rider Fleet</h2>
-                <button @click="showRiderModal = true" class="bg-[#006738] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] transition-colors">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Register Rider</span>
-                </button>
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Branch Workforce</h2>
+                    <p class="text-slate-500 text-sm italic">Manage your delivery riders and restaurant staff.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="showStaffModal = true" class="bg-[#006738] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] transition-colors">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Add Staff</span>
+                    </button>
+                    <button @click="showRiderModal = true" class="bg-[#ffec00] text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-yellow-400 transition-colors">
+                        <i data-lucide="bike" class="w-4 h-4"></i>
+                        <span>Add Rider</span>
+                    </button>
+                </div>
             </div>
-            <!-- Rider list could go here -->
-        </div>
 
-        <div x-show="activeTab === 'staff'" x-cloak>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 font-poppins">Kitchen Personnel</h2>
-                <button @click="showStaffModal = true" class="bg-[#006738] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] transition-colors">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Add Staff</span>
-                </button>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Login / Email</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Role</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="person in workforce" :key="person.source + person.id">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4 font-bold text-slate-800" x-text="`${person.fname} ${person.lname}`"></td>
+                                <td class="p-4 text-sm text-slate-600" x-text="person.email"></td>
+                                <td class="p-4">
+                                    <span :class="{
+                                        'bg-blue-100 text-blue-700': person.role === 'Kitchen Staff',
+                                        'bg-purple-100 text-purple-700': person.role === 'Staff',
+                                        'bg-orange-100 text-orange-700': person.role === 'Driver' || person.role === 'Rider'
+                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="person.role"></span>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <button @click="deletePerson(person.id, person.source)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
-            <!-- Staff list could go here -->
         </div>
 
         <div x-show="activeTab === 'availability'" x-cloak>
@@ -807,7 +881,7 @@ $user_id = $_SESSION['user_id'];
                             </button>
                         </div>
                         <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
-                        <p class="text-lg font-black text-[#006738]" x-text="'₱' + item.Menu_Price"></p>
+                        <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
                     </div>
                 </template>
             </div>
@@ -815,37 +889,70 @@ $user_id = $_SESSION['user_id'];
 
         <!-- Branch Manager Modals -->
         <div x-show="showStaffModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showStaffModal = false">
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showStaffModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
-                    <h3 class="font-black text-xl font-poppins capitalize">Register Kitchen Staff</h3>
+                    <h3 class="font-black text-xl font-poppins capitalize">Register Personnel</h3>
                     <button @click="showStaffModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" x-model="newStaff.fname" placeholder="First Name" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                        <input type="text" x-model="newStaff.lname" placeholder="Last Name" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">First Name</label>
+                            <input type="text" x-model="newStaff.fname" placeholder="Juan" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Last Name</label>
+                            <input type="text" x-model="newStaff.lname" placeholder="Dela Cruz" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
                     </div>
-                    <input type="email" x-model="newStaff.email" placeholder="Email Address" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                    <input type="text" x-model="newStaff.mobile" placeholder="Mobile Number" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                    <button @click="submitStaff()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl">Create Staff Account</button>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Email / Login</label>
+                        <input type="email" x-model="newStaff.email" placeholder="staff@inasal.com" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Role</label>
+                            <select x-model="newStaff.role" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm">
+                                <option>Kitchen Staff</option>
+                                <option value="Staff">Counter Staff</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Password</label>
+                            <input type="password" x-model="newStaff.password" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                    </div>
+                    <button @click="submitStaff()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
                 </div>
             </div>
         </div>
 
         <div x-show="showRiderModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showRiderModal = false">
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showRiderModal = false">
                 <div class="p-6 bg-[#ffec00] text-black flex justify-between items-center">
-                    <h3 class="font-black text-xl font-poppins capitalize">Register Rider</h3>
+                    <h3 class="font-black text-xl font-poppins capitalize">Register Delivery Rider</h3>
                     <button @click="showRiderModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" x-model="newRider.fname" placeholder="First Name" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                        <input type="text" x-model="newRider.lname" placeholder="Last Name" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">First Name</label>
+                            <input type="text" x-model="newRider.fname" placeholder="Pedro" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Last Name</label>
+                            <input type="text" x-model="newRider.lname" placeholder="Penduko" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
                     </div>
-                    <input type="email" x-model="newRider.email" placeholder="Rider Email" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                    <input type="text" x-model="newRider.mobile" placeholder="Rider Mobile" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                    <button @click="submitRider()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl">Create Rider Account</button>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Email / Login</label>
+                        <input type="email" x-model="newRider.email" placeholder="rider@inasal.com" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Password</label>
+                        <input type="password" x-model="newRider.password" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <button @click="submitRider()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Register Rider</button>
                 </div>
             </div>
         </div>
