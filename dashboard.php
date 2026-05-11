@@ -32,6 +32,7 @@ $user_id = $_SESSION['user_id'];
     managers: [],
     allUsers: [],
     workforce: [],
+    orders: [],
     currentBranch: null,
     stats: { branches: 0, managers: 0, staff: 0, riders: 0 },
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
@@ -40,6 +41,13 @@ $user_id = $_SESSION['user_id'];
     newStaff: { fname: '', lname: '', email: '', mobile: '', role: 'Kitchen Staff', password: 'password' },
     newRider: { fname: '', lname: '', email: '', mobile: '', password: 'password' },
     menuItems: [],
+    customerBranches: [],
+    selectedBranch: null,
+    customerMenu: [],
+    customerOrders: [],
+    riderDeliveries: [],
+    cart: [],
+    orderType: 'Delivery',
     showBranchModal: false,
     showManagerModal: false,
     showMenuModal: false,
@@ -63,11 +71,142 @@ $user_id = $_SESSION['user_id'];
             this.fetchManagers();
             this.fetchAllUsers();
         }
-        if(this.role === 'Branch Manager') {
+        if(this.role === 'Branch Manager' || this.role === 'Kitchen Staff') {
             this.fetchBranchMenu();
             this.fetchWorkforce();
             this.fetchBranchStats();
             this.fetchBranchInfo();
+            this.fetchOrders();
+        }
+        if(this.role === 'Customer') {
+            this.fetchCustomerBranches();
+            this.fetchCustomerOrders();
+        }
+        if(this.role === 'Driver') {
+            this.fetchRiderDeliveries();
+        }
+    },
+
+    async fetchCustomerBranches() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_branches' })
+        });
+        const data = await res.json();
+        if(data.success) this.customerBranches = data.data;
+    },
+
+    async selectBranch(branchId) {
+        const branch = this.customerBranches.find(b => b.Brnch_ID == branchId);
+        this.selectedBranch = branch;
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_branch_menu', branch_id: branchId })
+        });
+        const data = await res.json();
+        if(data.success) this.customerMenu = data.data;
+    },
+
+    addToCart(item) {
+        const existing = this.cart.find(i => i.Menu_ID === item.Menu_ID);
+        if(existing) {
+            existing.qty++;
+        } else {
+            this.cart.push({ ...item, qty: 1 });
+        }
+    },
+
+    get cartTotal() {
+        return this.cart.reduce((sum, item) => sum + (item.Menu_Price * item.qty), 0);
+    },
+
+    async placeOrder() {
+        if(this.cart.length === 0) return;
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: 'place_order', 
+                branch_id: this.selectedBranch.Brnch_ID,
+                type: this.orderType,
+                items: this.cart.map(i => ({ menu_id: i.Menu_ID, qty: i.qty, price: i.Menu_Price })),
+                total: this.cartTotal,
+                name: 'Guest User', // Profile logic later
+                num: '09000000000'
+            })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.cart = [];
+            this.activeTab = 'customer_orders';
+            this.fetchCustomerOrders();
+        }
+    },
+
+    async fetchCustomerOrders() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_customer_orders' })
+        });
+        const data = await res.json();
+        if(data.success) this.customerOrders = data.data;
+    },
+
+    async fetchRiderDeliveries() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_rider_deliveries' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.riderDeliveries = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async finishDelivery(orderId) {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'complete_delivery', order_id: orderId })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) this.fetchRiderDeliveries();
+    },
+
+    async fetchOrders() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_orders' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.orders = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async assignRider(orderId, riderId) {
+        if(!riderId) return;
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'assign_rider', order_id: orderId, rider_id: riderId })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchOrders();
+        }
+    },
+
+    async updateOrderStatus(orderId, status) {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_order_status', order_id: orderId, status: status })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.fetchOrders();
         }
     },
 
@@ -358,6 +497,12 @@ $user_id = $_SESSION['user_id'];
             <?php endif; ?>
 
             <?php if ($role === 'Branch Manager'): ?>
+                <a href="#" @click="activeTab = 'orders'" 
+                   :class="activeTab === 'orders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Orders</span>
+                </a>
                 <a href="#" @click="activeTab = 'workforce'" 
                    :class="activeTab === 'workforce' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
@@ -373,9 +518,11 @@ $user_id = $_SESSION['user_id'];
             <?php endif; ?>
 
             <?php if ($role === 'Kitchen Staff'): ?>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'orders'" 
+                   :class="activeTab === 'orders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Active Orders</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Active Orders</span>
                 </a>
                 <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
                     <i data-lucide="list-check" class="w-5 h-5"></i>
@@ -384,9 +531,11 @@ $user_id = $_SESSION['user_id'];
             <?php endif; ?>
 
             <?php if ($role === 'Driver'): ?>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'pending_deliveries'" 
+                   :class="activeTab === 'pending_deliveries' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="navigation" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Pending Deliveries</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Active Deliveries</span>
                 </a>
                 <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
                     <i data-lucide="map-pin" class="w-5 h-5"></i>
@@ -395,13 +544,17 @@ $user_id = $_SESSION['user_id'];
             <?php endif; ?>
 
             <?php if ($role === 'Customer'): ?>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'order_now'" 
+                   :class="activeTab === 'order_now' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="utensils" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Order Now</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Order Now</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'customer_orders'" 
+                   :class="activeTab === 'customer_orders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="history" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">My Orders</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">My Orders</span>
                 </a>
             <?php endif; ?>
         </nav>
@@ -424,7 +577,7 @@ $user_id = $_SESSION['user_id'];
                     <h1 class="text-2xl font-black text-slate-800 font-poppins capitalize"><?php echo str_replace('_', ' ', $role); ?> Dashboard</h1>
                     <p class="text-slate-500">Welcome back, we're ready to grill!</p>
                 </div>
-                <template x-if="currentBranch">
+                <template x-if="currentBranch && activeTab === 'overview'">
                     <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-2xl shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
                         <div class="w-8 h-8 bg-green-50 text-[#006738] rounded-lg flex items-center justify-center">
                             <i data-lucide="map-pin" class="w-4 h-4"></i>
@@ -977,6 +1130,90 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <div x-show="activeTab === 'orders'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Order Management</h2>
+                    <p class="text-slate-500 text-sm">Monitor and dispatch orders for your branch.</p>
+                </div>
+                <button @click="fetchOrders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <template x-for="order in orders" :key="order.Order_ID">
+                    <div class="bg-white border-2 border-slate-50 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
+                        <div class="flex flex-wrap justify-between items-start gap-4">
+                            <div class="flex gap-4">
+                                <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#006738] shadow-inner">
+                                    <i data-lucide="package" class="w-7 h-7"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h3 class="font-black text-slate-800" x-text="order.Order_Code"></h3>
+                                        <span :class="{
+                                            'bg-orange-100 text-orange-700': order.Order_Stat === 'Pending',
+                                            'bg-blue-100 text-blue-700': order.Order_Stat === 'Preparing',
+                                            'bg-purple-100 text-purple-700': order.Order_Stat === 'Ready',
+                                            'bg-green-100 text-green-700': order.Order_Stat === 'Delivering',
+                                            'bg-slate-100 text-slate-700': order.Order_Stat === 'Completed'
+                                        }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="order.Order_Stat"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 font-bold" x-text="`${order.Cust_FName} ${order.Cust_LName}`"></p>
+                                    <p class="text-[10px] text-slate-300 uppercase tracking-tighter" x-text="order.Order_Type"></p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-6">
+                                <div class="text-right">
+                                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Total Amount</p>
+                                    <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(order.Order_Total_Amount).toFixed(2)"></p>
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <!-- Transitions -->
+                                    <template x-if="order.Order_Stat === 'Pending'">
+                                        <button @click="updateOrderStatus(order.Order_ID, 'Preparing')" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-bold text-xs">Start Cooking</button>
+                                    </template>
+                                    <template x-if="order.Order_Stat === 'Preparing'">
+                                        <button @click="updateOrderStatus(order.Order_ID, 'Ready')" class="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition-all font-bold text-xs">Mark as Ready</button>
+                                    </template>
+                                    
+                                    <!-- Dispatch Logic -->
+                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type === 'Delivery'">
+                                        <div class="flex items-center gap-2">
+                                            <select class="p-3 bg-[#fcfbf7] border-2 border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-[#006738]" 
+                                                    @change="assignRider(order.Order_ID, $event.target.value)">
+                                                <option value="">Assign Rider</option>
+                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider')" :key="rider.id">
+                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type !== 'Delivery'">
+                                        <button @click="updateOrderStatus(order.Order_ID, 'Completed')" class="p-3 bg-[#006738] text-white rounded-xl hover:shadow-lg transition-all font-bold text-xs">Mark Collected</button>
+                                    </template>
+
+                                    <template x-if="order.Order_Stat === 'Delivering'">
+                                        <div class="flex items-center gap-2 px-4 py-2 bg-green-50 text-[#006738] rounded-xl border border-green-100">
+                                            <i data-lucide="bike" class="w-4 h-4"></i>
+                                            <div class="text-left">
+                                                <p class="text-[9px] font-black uppercase opacity-60">En-route</p>
+                                                <p class="text-[10px] font-bold" x-text="order.Rider_FName"></p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <div x-show="activeTab === 'availability'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-black text-slate-800 font-poppins">Menu Availability</h2>
@@ -995,6 +1232,234 @@ $user_id = $_SESSION['user_id'];
                         </div>
                         <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
                         <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Rider Tab -->
+        <div x-show="activeTab === 'pending_deliveries'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">My Deliveries</h2>
+                    <p class="text-slate-500 text-sm">Active routes assigned to you.</p>
+                </div>
+                <button @click="fetchRiderDeliveries()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <template x-for="order in riderDeliveries" :key="order.Order_ID">
+                    <div class="bg-white border-2 border-slate-50 rounded-[2rem] p-8 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-8 opacity-5">
+                            <i data-lucide="bike" class="w-32 h-32 text-[#006738]"></i>
+                        </div>
+                        
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center shadow-inner">
+                                <i data-lucide="navigation" class="w-7 h-7"></i>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-green-100 text-green-700 text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-widest animate-pulse">In Delivery</span>
+                                <p class="text-[10px] font-black text-slate-300 uppercase mt-2 tracking-tighter" x-text="order.Order_Code"></p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-8">
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Customer</p>
+                                <p class="text-xl font-black text-slate-800 font-poppins" x-text="`${order.Cust_FName} ${order.Cust_LName}`"></p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Delivery Address</p>
+                                <p class="text-sm font-bold text-slate-600 flex items-start gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4 mt-0.5 text-red-500"></i>
+                                    <span x-text="`${order.Add_Street}, ${order.Add_City}`"></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <button @click="finishDelivery(order.Order_ID)" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            Mark as Delivered
+                        </button>
+                    </div>
+                </template>
+                <template x-if="riderDeliveries.length === 0">
+                    <div class="md:col-span-2 py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                        <div class="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="inbox" class="w-10 h-10"></i>
+                        </div>
+                        <h3 class="font-black text-slate-400 text-xl font-poppins">No Active Deliveries</h3>
+                        <p class="text-slate-300 text-sm mt-2">Check back later when orders are ready!</p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Customer Tabs -->
+        <div x-show="activeTab === 'order_now'" x-cloak>
+            <div class="mb-10 text-center">
+                <h2 class="text-4xl font-black text-slate-800 font-poppins mb-2">Craving for Inasal?</h2>
+                <p class="text-slate-500 italic">Select your preferred branch to start grilling!</p>
+            </div>
+
+            <!-- Branch Selection -->
+            <div x-show="!selectedBranch" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <template x-for="branch in customerBranches" :key="branch.Brnch_ID">
+                    <div @click="selectBranch(branch.Brnch_ID)" class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-2xl hover:border-[#006738] transition-all cursor-pointer group">
+                        <div class="w-16 h-16 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner">
+                            <i data-lucide="store" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800 font-poppins mb-2" x-text="branch.Brnch_Name"></h3>
+                        <p class="text-slate-500 text-sm mb-6 line-clamp-2" x-text="`${branch.Brnch_Street}, ${branch.Brnch_Brgy}, ${branch.Brnch_City}`"></p>
+                        
+                        <div class="flex items-center justify-between pt-6 border-t border-slate-50">
+                            <span class="text-xs font-black uppercase text-[#006738] tracking-widest">Order Now</span>
+                            <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center group-hover:bg-[#ffec00] transition-colors">
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Menu Content -->
+            <div x-show="selectedBranch" class="flex flex-col lg:flex-row gap-8">
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-8">
+                        <button @click="selectedBranch = null; cart = []" class="flex items-center gap-2 text-slate-400 hover:text-[#006738] font-bold transition-colors">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                            Back to Branches
+                        </button>
+                        <div class="text-right">
+                           <h3 class="font-black text-xl text-slate-800" x-text="selectedBranch?.Brnch_Name"></h3>
+                           <p class="text-xs text-slate-400 font-bold" x-text="selectedBranch?.Brnch_City"></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <template x-for="item in customerMenu" :key="item.Menu_ID">
+                            <div class="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm hover:shadow-lg transition-all flex gap-5">
+                                <div class="w-24 h-24 bg-slate-50 rounded-2xl flex-shrink-0 flex items-center justify-center text-[#006738]">
+                                    <i data-lucide="utensils" class="w-10 h-10 opacity-20"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 class="font-black text-slate-800 font-poppins" x-text="item.Menu_Name"></h4>
+                                            <p class="text-[10px] font-black uppercase text-[#006738]" x-text="item.Menu_Size"></p>
+                                        </div>
+                                        <p class="font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
+                                    </div>
+                                    <p class="text-xs text-slate-400 line-clamp-2 mb-4 italic" x-text="item.Menu_Description"></p>
+                                    <button @click="addToCart(item)" class="text-[10px] font-black uppercase tracking-widest text-[#006738] hover:bg-green-50 px-3 py-2 rounded-lg transition-colors border border-green-100">
+                                        Add to Tray
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Shopping Tray (Cart) -->
+                <div class="w-full lg:w-96">
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-8 sticky top-8">
+                        <div class="flex items-center gap-3 mb-8">
+                            <div class="w-10 h-10 bg-[#ffec00] rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                                <i data-lucide="shopping-basket" class="w-5 h-5 text-black"></i>
+                            </div>
+                            <h3 class="font-black text-xl font-poppins">Your Tray</h3>
+                        </div>
+
+                        <div class="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <template x-for="(item, index) in cart" :key="index">
+                                <div class="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-50">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-slate-800 truncate" x-text="item.Menu_Name"></p>
+                                        <p class="text-[10px] font-black text-[#006738]" x-text="item.qty + 'x ₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors">-</button>
+                                        <button @click="item.qty++" class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-green-600 transition-colors">+</button>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="cart.length === 0">
+                                <p class="text-center text-slate-400 py-10 italic text-sm">Your tray is empty.</p>
+                            </template>
+                        </div>
+
+                        <div class="space-y-4 pt-6 border-t border-slate-100">
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Order Type</label>
+                                <select x-model="orderType" class="w-full bg-[#fcfbf7] border-2 border-transparent focus:border-[#006738] rounded-xl py-2 px-3 text-xs font-bold outline-none mt-1">
+                                    <option>Delivery</option>
+                                    <option>Take-out</option>
+                                    <option>Dine-in</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-2">
+                                <span class="font-black text-slate-400 uppercase text-xs">Total Amount</span>
+                                <span class="text-2xl font-black text-[#006738]" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></span>
+                            </div>
+
+                            <button @click="placeOrder()" 
+                                    :disabled="cart.length === 0"
+                                    :class="cart.length === 0 ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] shadow-green-900/10 active:scale-95'"
+                                    class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-xl transition-all">
+                                Place My Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'customer_orders'" x-cloak>
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                   <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">My Orders</h2>
+                   <p class="text-slate-500 text-sm">Track your cravings status live!</p>
+                </div>
+                <button @click="fetchCustomerOrders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <template x-for="order in customerOrders" :key="order.Order_ID">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#006738]">
+                                <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-slate-800" x-text="order.Order_Code"></h4>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest" x-text="order.Order_Type"></p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-8">
+                            <div class="text-right">
+                                <p class="text-[10px] font-black uppercase text-slate-300">Total</p>
+                                <p class="font-black text-[#006738]" x-text="'₱' + parseFloat(order.Order_Total_Amount).toFixed(0)"></p>
+                            </div>
+                            <span :class="{
+                                'bg-orange-100 text-orange-700': order.Order_Stat === 'Pending',
+                                'bg-blue-100 text-blue-700': order.Order_Stat === 'Preparing',
+                                'bg-purple-100 text-purple-700': order.Order_Stat === 'Ready',
+                                'bg-green-100 text-green-700': order.Order_Stat === 'Delivering',
+                                'bg-slate-100 text-slate-800': order.Order_Stat === 'Completed'
+                            }" class="text-[10px] font-black uppercase px-3 py-2 rounded-full min-w-[100px] text-center" x-text="order.Order_Stat"></span>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="customerOrders.length === 0">
+                    <div class="text-center py-20">
+                        <p class="text-slate-400 italic">No orders yet. Let's get grilling!</p>
                     </div>
                 </template>
             </div>

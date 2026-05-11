@@ -3,7 +3,7 @@ session_start();
 include 'db.php';
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Branch Manager') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Branch Manager', 'Kitchen Staff'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
     exit;
 }
@@ -99,6 +99,51 @@ try {
         $stmt->execute([$branch_id]);
         $branch = $stmt->fetch();
         echo json_encode(['success' => true, 'branch' => $branch]);
+    }
+    elseif ($action === 'get_orders') {
+        $stmt = $pdo->prepare("
+            SELECT o.*, c.Cust_FName, c.Cust_LName, r.Rider_FName, r.Rider_LName
+            FROM orders o
+            JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
+            LEFT JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID
+            LEFT JOIN RIDER r ON d.Dlvry_Rider_ID = r.Rider_ID
+            WHERE o.Order_Brnch_ID = ?
+            ORDER BY o.Order_ID DESC
+        ");
+        $stmt->execute([$branch_id]);
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+    }
+    elseif ($action === 'assign_rider') {
+        $order_id = $data['order_id'];
+        $rider_id = $data['rider_id'];
+
+        $pdo->beginTransaction();
+        try {
+            // Delete existing delivery if any
+            $stmt = $pdo->prepare("DELETE FROM DELIVERY WHERE Dlvry_Order_ID = ?");
+            $stmt->execute([$order_id]);
+
+            // Create new delivery
+            $stmt = $pdo->prepare("INSERT INTO DELIVERY (Dlvry_Order_ID, Dlvry_Rider_ID) VALUES (?, ?)");
+            $stmt->execute([$order_id, $rider_id]);
+
+            // Update order status
+            $stmt = $pdo->prepare("UPDATE orders SET Order_Stat = 'Delivering' WHERE Order_ID = ?");
+            $stmt->execute([$order_id]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Rider assigned and order dispatched!']);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+    elseif ($action === 'update_order_status') {
+        $order_id = $data['order_id'];
+        $status = $data['status'];
+        $stmt = $pdo->prepare("UPDATE orders SET Order_Stat = ? WHERE Order_ID = ?");
+        $stmt->execute([$status, $order_id]);
+        echo json_encode(['success' => true, 'message' => 'Status updated.']);
     }
     elseif ($action === 'toggle_menu') {
         $menu_id = $data['menu_id'];
