@@ -35,6 +35,7 @@ $user_id = $_SESSION['user_id'];
     orders: [],
     currentBranch: null,
     stats: { branches: 0, managers: 0, staff: 0, riders: 0 },
+    reports: { dailySales: 0, totalOrders: 0, topItems: [] },
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
     newManager: { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: '' },
     newMenu: { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard' },
@@ -46,6 +47,9 @@ $user_id = $_SESSION['user_id'];
     customerMenu: [],
     customerOrders: [],
     riderDeliveries: [],
+    profileData: { fname: '', lname: '', email: '', mobile: '' },
+    addresses: [],
+    orderItems: {}, // Track items by order ID
     cart: [],
     orderType: 'Delivery',
     showBranchModal: false,
@@ -70,6 +74,7 @@ $user_id = $_SESSION['user_id'];
             this.fetchStats();
             this.fetchManagers();
             this.fetchAllUsers();
+            this.fetchReports();
         }
         if(this.role === 'Branch Manager' || this.role === 'Kitchen Staff') {
             this.fetchBranchMenu();
@@ -81,10 +86,37 @@ $user_id = $_SESSION['user_id'];
         if(this.role === 'Customer') {
             this.fetchCustomerBranches();
             this.fetchCustomerOrders();
+            this.fetchProfile();
         }
         if(this.role === 'Driver') {
             this.fetchRiderDeliveries();
         }
+    },
+
+    async fetchProfile() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_profile' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.profileData = {
+                fname: data.profile.Cust_FName,
+                lname: data.profile.Cust_LName,
+                email: data.profile.Cust_Email,
+                mobile: data.profile.Cust_MobileNum
+            };
+            this.addresses = data.addresses;
+        }
+    },
+
+    async fetchReports() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_reports' })
+        });
+        const data = await res.json();
+        if(data.success) this.reports = data.data;
     },
 
     async fetchCustomerBranches() {
@@ -120,8 +152,16 @@ $user_id = $_SESSION['user_id'];
         return this.cart.reduce((sum, item) => sum + (item.Menu_Price * item.qty), 0);
     },
 
+    get isCartValid() {
+        if (this.orderType === 'Delivery' && this.cartTotal < 200) return false;
+        return this.cart.length > 0;
+    },
+
     async placeOrder() {
-        if(this.cart.length === 0) return;
+        if(!this.isCartValid) {
+            this.message = { success: false, text: 'Minimum order of ₱200 required for delivery.' };
+            return;
+        }
         const res = await fetch('orders_api.php', {
             method: 'POST',
             body: JSON.stringify({ 
@@ -207,6 +247,21 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         if(data.success) {
             this.fetchOrders();
+        }
+    },
+
+    async fetchOrderItems(orderId) {
+        if (this.orderItems[orderId]) {
+            delete this.orderItems[orderId];
+            return;
+        }
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_order_items', order_id: orderId })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.orderItems[orderId] = data.data;
         }
     },
 
@@ -494,6 +549,12 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="book-user" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">User Directory</span>
                 </a>
+                <a href="#" @click="activeTab = 'reports'" 
+                   :class="activeTab === 'reports' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Reports</span>
+                </a>
             <?php endif; ?>
 
             <?php if ($role === 'Branch Manager'): ?>
@@ -555,6 +616,12 @@ $user_id = $_SESSION['user_id'];
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="history" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">My Orders</span>
+                </a>
+                <a href="#" @click="activeTab = 'profile'" 
+                   :class="activeTab === 'profile' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="user-circle" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Profile</span>
                 </a>
             <?php endif; ?>
         </nav>
@@ -895,6 +962,64 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <!-- Reports Tab -->
+        <div x-show="activeTab === 'reports'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">System Reports</h2>
+                    <p class="text-slate-500 text-sm">Overview of system-wide performance and sales.</p>
+                </div>
+                <button @click="fetchReports()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Daily Sales Card -->
+                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform">
+                        <i data-lucide="trending-up" class="w-32 h-32 text-[#006738]"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Today's Sales</p>
+                    <h3 class="text-4xl font-black text-[#006738] font-poppins" x-text="'₱' + parseFloat(reports.dailySales).toLocaleString()"></h3>
+                    <p class="text-xs text-slate-400 mt-4 font-bold">Successfully completed orders today</p>
+                </div>
+
+                <!-- Total Orders Card -->
+                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform">
+                        <i data-lucide="shopping-bag" class="w-32 h-32 text-orange-500"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Orders Today</p>
+                    <h3 class="text-4xl font-black text-slate-800 font-poppins" x-text="reports.totalOrders"></h3>
+                    <p class="text-xs text-slate-400 mt-4 font-bold">Total inflow of orders including pending</p>
+                </div>
+
+                <!-- Best Seller Card -->
+                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm lg:col-span-1 md:col-span-2">
+                    <h3 class="font-black text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="award" class="w-5 h-5 text-yellow-500"></i> Hot Selling Items
+                    </h3>
+                    <div class="space-y-3">
+                        <template x-for="(item, index) in reports.topItems" :key="index">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-green-100 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 rounded-lg bg-green-100 text-[#006738] flex items-center justify-center font-black text-[10px]" x-text="index + 1"></div>
+                                    <p class="font-bold text-slate-700 text-sm" x-text="item.Menu_Name"></p>
+                                </div>
+                                <p class="text-[10px] font-black text-[#006738] bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm" x-text="item.total_qty + ' units'"></p>
+                            </div>
+                        </template>
+                        <template x-if="reports.topItems.length === 0">
+                            <div class="py-10 text-center">
+                                <p class="text-slate-400 italic text-sm">No data available yet</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div x-show="activeTab === 'menu'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <div>
@@ -1165,6 +1290,10 @@ $user_id = $_SESSION['user_id'];
                                 </div>
                             </div>
 
+                            <button @click="fetchOrderItems(order.Order_ID)" class="text-[10px] font-black uppercase text-[#006738] border border-green-100 px-3 py-1 rounded-lg hover:bg-green-50 transition-colors">
+                                View Items
+                            </button>
+
                             <div class="flex items-center gap-6">
                                 <div class="text-right">
                                     <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Total Amount</p>
@@ -1204,6 +1333,25 @@ $user_id = $_SESSION['user_id'];
                                                 <p class="text-[9px] font-black uppercase opacity-60">En-route</p>
                                                 <p class="text-[10px] font-bold" x-text="order.Rider_FName"></p>
                                             </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Details Expansion -->
+                        <div x-show="orderItems[order.Order_ID]" x-collapse x-cloak class="mt-6 pt-6 border-t border-slate-50">
+                            <div class="bg-slate-50/50 rounded-2xl p-4">
+                                <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Kitchen Ticket</h4>
+                                <div class="space-y-2">
+                                    <template x-for="item in orderItems[order.Order_ID]" :key="item.OItem_ID">
+                                        <div class="flex justify-between items-center text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-6 h-6 bg-white border border-slate-200 rounded flex items-center justify-center font-black text-[#006738] text-[10px]" x-text="item.OItem_Quantity + 'x'"></span>
+                                                <span class="font-bold text-slate-700" x-text="item.Menu_Name"></span>
+                                                <span class="text-[10px] font-black uppercase text-slate-400" x-text="item.Menu_Size"></span>
+                                            </div>
+                                            <span class="font-black text-slate-400 text-xs" x-text="'₱' + parseFloat(item.OItem_Unit_Price).toFixed(0)"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -1273,10 +1421,15 @@ $user_id = $_SESSION['user_id'];
                             </div>
                             <div>
                                 <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Delivery Address</p>
-                                <p class="text-sm font-bold text-slate-600 flex items-start gap-2">
-                                    <i data-lucide="map-pin" class="w-4 h-4 mt-0.5 text-red-500"></i>
-                                    <span x-text="`${order.Add_Street}, ${order.Add_City}`"></span>
-                                </p>
+                                <div class="flex items-start justify-between gap-4">
+                                    <p class="text-sm font-bold text-slate-600 flex items-start gap-2">
+                                        <i data-lucide="map-pin" class="w-4 h-4 mt-0.5 text-red-500"></i>
+                                        <span x-text="`${order.Add_Street}, ${order.Add_City}`"></span>
+                                    </p>
+                                    <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(order.Add_Street + ', ' + order.Add_City)" target="_blank" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-blue-600">
+                                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
@@ -1462,6 +1615,82 @@ $user_id = $_SESSION['user_id'];
                         <p class="text-slate-400 italic">No orders yet. Let's get grilling!</p>
                     </div>
                 </template>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'profile'" x-cloak>
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                   <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Account Profile</h2>
+                   <p class="text-slate-500 text-sm">Manage your personal information and addresses.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Personal Info -->
+                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm transition-all h-fit">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-16 h-16 bg-green-50 text-[#006738] rounded-full flex items-center justify-center shadow-inner">
+                            <i data-lucide="user" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-xl font-poppins" x-text="`${profileData.fname} ${profileData.lname}`"></h3>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Registered Customer</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1 mb-1 block">First Name</label>
+                                <div class="bg-slate-50 p-4 rounded-2xl font-bold text-slate-600 text-sm" x-text="profileData.fname"></div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1 mb-1 block">Last Name</label>
+                                <div class="bg-slate-50 p-4 rounded-2xl font-bold text-slate-600 text-sm" x-text="profileData.lname"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1 mb-1 block">Email Address</label>
+                            <div class="bg-slate-50 p-4 rounded-2xl font-bold text-slate-600 text-sm" x-text="profileData.email"></div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1 mb-1 block">Mobile Number</label>
+                            <div class="bg-slate-50 p-4 rounded-2xl font-bold text-slate-600 text-sm" x-text="profileData.mobile"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Addresses -->
+                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm transition-all h-fit">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-black text-slate-800 text-xl font-poppins flex items-center gap-2">
+                            <i data-lucide="map-pinned" class="w-5 h-5 text-[#006738]"></i> Saved Addresses
+                        </h3>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <template x-for="addr in addresses" :key="addr.Add_ID">
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-[10px] font-black uppercase bg-[#006738] text-white px-2 py-0.5 rounded" x-text="addr.Add_Label"></span>
+                                    </div>
+                                    <p class="text-sm font-bold text-slate-700" x-text="`${addr.Add_Street}, ${addr.Add_City}`"></p>
+                                    <p class="text-xs text-slate-400 mt-1" x-text="`${addr.Add_Province}, ${addr.Add_Label}`"></p>
+                                </div>
+                                <div class="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-red-500 opacity-50 cursor-not-allowed">
+                                    <i data-lucide="trash" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="addresses.length === 0">
+                            <div class="py-10 text-center text-slate-400">
+                                <p class="italic text-sm">No saved addresses yet.</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
 

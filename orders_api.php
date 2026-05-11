@@ -95,6 +95,17 @@ try {
         $stmt->execute([$user_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'get_profile') {
+        $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_MobileNum FROM CUSTOMER WHERE Cust_ID = ?");
+        $stmt->execute([$user_id]);
+        $profile = $stmt->fetch();
+        
+        $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ?");
+        $stmt->execute([$user_id]);
+        $addresses = $stmt->fetchAll();
+        
+        echo json_encode(['success' => true, 'profile' => $profile, 'addresses' => $addresses]);
+    }
     elseif ($action === 'get_rider_deliveries') {
         if ($role !== 'Driver') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized.']);

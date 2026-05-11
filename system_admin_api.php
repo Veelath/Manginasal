@@ -172,6 +172,28 @@ try {
         
         echo json_encode(['success' => true, 'data' => $users]);
     }
+    elseif ($action === 'get_reports') {
+        $dailySales = $pdo->query("SELECT SUM(Order_Total_Amount) FROM orders WHERE DATE(Order_Date) = CURDATE() AND Order_Stat = 'Completed'")->fetchColumn() ?: 0;
+        $totalOrders = $pdo->query("SELECT COUNT(*) FROM orders WHERE DATE(Order_Date) = CURDATE()")->fetchColumn() ?: 0;
+        
+        $topItems = $pdo->query("
+            SELECT m.Menu_Name, SUM(oi.OItem_Quantity) as total_qty
+            FROM ORDER_ITEM oi
+            JOIN MENU_ITEM m ON oi.OItem_Menu_ID = m.Menu_ID
+            GROUP BY m.Menu_ID
+            ORDER BY total_qty DESC
+            LIMIT 5
+        ")->fetchAll();
+        
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'dailySales' => $dailySales,
+                'totalOrders' => $totalOrders,
+                'topItems' => $topItems
+            ]
+        ]);
+    }
 } catch (Exception $e) {
      echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }

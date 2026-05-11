@@ -113,6 +113,17 @@ try {
         $stmt->execute([$branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'get_order_items') {
+        $order_id = $data['order_id'];
+        $stmt = $pdo->prepare("
+            SELECT oi.*, m.Menu_Name, m.Menu_Size
+            FROM ORDER_ITEM oi
+            JOIN MENU_ITEM m ON oi.OItem_Menu_ID = m.Menu_ID
+            WHERE oi.Order_ID = ?
+        ");
+        $stmt->execute([$order_id]);
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+    }
     elseif ($action === 'assign_rider') {
         $order_id = $data['order_id'];
         $rider_id = $data['rider_id'];
