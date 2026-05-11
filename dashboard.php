@@ -30,6 +30,7 @@ $user_id = $_SESSION['user_id'];
     activeTab: 'overview',
     branches: [],
     managers: [],
+    allUsers: [],
     stats: { branches: 0, managers: 0 },
     showBranchModal: false,
     showManagerModal: false,
@@ -52,6 +53,7 @@ $user_id = $_SESSION['user_id'];
             this.fetchMenu();
             this.fetchStats();
             this.fetchManagers();
+            this.fetchAllUsers();
         }
         if(this.role === 'Branch Manager') {
             this.fetchBranchMenu();
@@ -66,6 +68,18 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         if(data.success) {
             this.managers = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async fetchAllUsers() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_all_users' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.allUsers = data.data;
             this.$nextTick(() => lucide.createIcons());
         }
     },
@@ -229,6 +243,10 @@ $user_id = $_SESSION['user_id'];
                 <a href="#" @click="activeTab = 'manage_managers'" :class="activeTab === 'manage_managers' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
                     <i data-lucide="users" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen">Manage Managers</span>
+                </a>
+                <a href="#" @click="activeTab = 'user_directory'" :class="activeTab === 'user_directory' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                    <i data-lucide="book-user" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen">User Directory</span>
                 </a>
             <?php endif; ?>
 
@@ -459,18 +477,19 @@ $user_id = $_SESSION['user_id'];
                     <span>Create Manager</span>
                 </button>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm">
+                <div class="overflow-visible p-1 pb-60">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
                         <template x-for="manager in managers" :key="manager.Staff_ID">
                             <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
@@ -491,25 +510,70 @@ $user_id = $_SESSION['user_id'];
                                     </span>
                                 </td>
                                 <td class="p-4 text-right">
-                                    <div class="flex justify-end gap-2 relative" x-data="{ open: false }">
+                                    <div class="flex justify-end gap-2 relative z-10" x-data="{ open: false }">
                                         <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
                                             <i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i>
                                         </button>
                                         <div x-show="open" @click.away="open = false" 
-                                             class="absolute right-0 top-full mt-1 bg-white border border-slate-100 rounded-xl shadow-2xl z-[60] py-2 w-40 animate-in fade-in slide-in-from-top-2 duration-200"
-                                             x-transition>
-                                            <div class="px-4 py-1 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Set Status</div>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-2 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Active
+                                             class="absolute right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl z-[70] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
+                                             x-transition x-cloak>
+                                            <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Account Status</div>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
+                                                <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Set Active
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-2 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspended
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-3 transition-colors">
+                                                <div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspend User
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors">
-                                                <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Resigned
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
+                                                <div class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Mark Resigned
                                             </button>
                                         </div>
                                     </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- User Directory Tab -->
+        <div x-show="activeTab === 'user_directory'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">User Directory</h2>
+                    <p class="text-slate-500 text-sm italic">Complete list of registered personnel and customers.</p>
+                </div>
+                <button @click="fetchAllUsers()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 shadow-sm active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Full Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Login / Email</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Account Type</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Database Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="user in allUsers" :key="user.source + user.id">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4 font-bold text-slate-800" x-text="`${user.fname} ${user.lname}`"></td>
+                                <td class="p-4 text-sm font-medium text-[#006738]" x-text="user.email"></td>
+                                <td class="p-4">
+                                    <span :class="{
+                                        'bg-purple-100 text-purple-700': user.role === 'System Admin',
+                                        'bg-blue-100 text-blue-700': user.role === 'Branch Manager',
+                                        'bg-green-100 text-green-700': user.role === 'Customer',
+                                        'bg-orange-100 text-orange-700': user.role === 'Driver' || user.role === 'Rider',
+                                        'bg-slate-100 text-slate-700': user.role === 'Kitchen Staff'
+                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="user.role"></span>
+                                </td>
+                                <td class="p-4">
+                                    <div class="text-[10px] font-bold text-slate-300 uppercase tracking-widest" x-text="user.source"></div>
                                 </td>
                             </tr>
                         </template>
@@ -526,7 +590,7 @@ $user_id = $_SESSION['user_id'];
                     <span>Add Item</span>
                 </button>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
