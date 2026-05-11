@@ -55,8 +55,9 @@ $user_id = $_SESSION['user_id'];
     showBranchModal: false,
     currentCarousel: 0,
     carouselItems: [
-        { title: 'Extra Creamy Halo-Halo', subtitle: 'CREAMINESSSSSSS', image: 'https://images.unsplash.com/photo-1582236314828-591a27e467cf?q=80&w=2000&auto=format&fit=crop', color: '#006738' },
-        { title: 'Chicken Inasal', subtitle: 'THE ORIGINAL GRILL', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=2000&auto=format&fit=crop', color: '#ffec00' }
+        { title: 'Extra Creamy Halo-Halo', subtitle: 'HULING LASAP!', image: 'https://images.unsplash.com/photo-1582236314828-591a27e467cf?q=80&w=2000&auto=format&fit=crop', color: '#006738' },
+        { title: 'PM1: Paa with Rice', subtitle: 'UNLI-RICE EXPERIENCE', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=2000&auto=format&fit=crop', color: '#ffec00' },
+        { title: 'Family Fiesta', subtitle: 'SHARE THE GRILL', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=2000&auto=format&fit=crop', color: '#006738' }
     ],
     categories: [
         { name: 'Must Try!', icon: 'star', db: 'Chicken' },
@@ -635,6 +636,12 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="utensils" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">Order Now</span>
                 </a>
+                <a href="#" @click="activeTab = 'promos'" 
+                   :class="activeTab === 'promos' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="tag" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Promos</span>
+                </a>
                 <a href="#" @click="activeTab = 'customer_orders'" 
                    :class="activeTab === 'customer_orders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
@@ -664,9 +671,17 @@ $user_id = $_SESSION['user_id'];
         <!-- Top Bar -->
         <header class="flex justify-between items-center mb-8">
             <div class="flex items-center gap-4">
-                <div>
+                <div class="flex flex-col">
                     <h1 class="text-2xl font-black text-slate-800 font-poppins capitalize"><?php echo str_replace('_', ' ', $role); ?> Dashboard</h1>
-                    <p class="text-slate-500">Welcome back, we're ready to grill!</p>
+                    <div class="flex items-center gap-4 mt-1">
+                        <?php if ($role === 'Customer'): ?>
+                            <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Home</button>
+                            <button @click="activeTab = 'order_now'" :class="activeTab === 'order_now' ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Menu</button>
+                            <button @click="activeTab = 'order_now'; selectedBranch = null" :class="activeTab === 'order_now' && !selectedBranch ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Stores</button>
+                        <?php else: ?>
+                            <p class="text-slate-500">Welcome back, we're ready to grill!</p>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <?php if ($role === 'Customer'): ?>
@@ -744,8 +759,7 @@ $user_id = $_SESSION['user_id'];
         <?php endif; ?>
 
         <!-- Dynamic Role Content -->
-        <div x-show="activeTab === 'overview'" class="space-y-8">
-            <?php if ($role !== 'Customer'): ?>
+        <div x-show="activeTab === 'overview' && role !== 'Customer'" class="space-y-8">
             <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-8 md:p-12 relative group">
                 <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                     <i data-lucide="flame" class="w-64 h-64 text-[#006738]"></i>
@@ -797,6 +811,87 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </div>
             <?php endif; ?>
+        </div>
+
+        <div x-show="activeTab === 'overview' && role === 'Customer'" class="space-y-8" x-cloak>
+            <!-- Hero Carousel -->
+            <div class="relative w-full h-[400px] mb-12 rounded-[2.5rem] overflow-hidden group shadow-2xl">
+                <template x-for="(item, index) in carouselItems" :key="index">
+                    <div x-show="currentCarousel === index" 
+                         x-transition:enter="transition ease-out duration-500"
+                         x-transition:enter-start="opacity-0 scale-105"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         class="absolute inset-0">
+                        <img :src="item.image" class="w-full h-full object-cover brightness-75" :alt="item.title">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-12">
+                            <h2 class="text-white text-5xl font-black font-poppins mb-2" x-text="item.title"></h2>
+                            <p class="text-[#ffec00] text-xl font-black tracking-widest mb-8" x-text="item.subtitle"></p>
+                            <button @click="activeTab = 'order_now'" class="bg-[#ffec00] text-black font-black px-8 py-4 rounded-full w-fit hover:scale-105 transition-transform shadow-xl shadow-yellow-500/20 uppercase tracking-widest text-sm">
+                                Order Now
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                
+                <!-- Carousel Controls -->
+                <button @click="currentCarousel = (currentCarousel - 1 + carouselItems.length) % carouselItems.length" 
+                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <button @click="currentCarousel = (currentCarousel + 1) % carouselItems.length" 
+                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+                
+                <div class="absolute bottom-6 left-12 flex gap-2">
+                    <template x-for="(item, index) in carouselItems" :key="index">
+                        <button @click="currentCarousel = index" 
+                                :class="currentCarousel === index ? 'w-10 bg-[#ffec00]' : 'w-2 bg-white/50'"
+                                class="h-2 rounded-full transition-all duration-300"></button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Featured Menu (Categories) -->
+            <div class="mb-12">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-2xl font-black text-slate-800 font-poppins capitalize">Featured Selection</h3>
+                    <button class="text-green-600 font-bold flex items-center gap-1 hover:gap-2 transition-all">
+                        View All <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex gap-8 overflow-x-auto pb-4 no-scrollbar">
+                    <template x-for="cat in categories" :key="cat.name">
+                        <div class="flex flex-col items-center gap-4 group cursor-pointer flex-shrink-0" @click="selectedCategory = cat.name; activeTab = 'order_now'">
+                            <div :class="selectedCategory === cat.name ? 'bg-[#006738] text-white scale-110 shadow-xl shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100 hover:border-green-100'"
+                                 class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300">
+                                <i :data-lucide="cat.icon" class="w-10 h-10"></i>
+                            </div>
+                            <span :class="selectedCategory === cat.name ? 'text-[#006738] font-black' : 'text-slate-500 font-bold'"
+                                  class="text-xs transition-colors" x-text="cat.name"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-2xl font-black text-slate-800 font-poppins mb-6">Nearby Branches</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <template x-for="branch in customerBranches.slice(0, 3)" :key="branch.Brnch_ID">
+                        <div @click="selectBranch(branch.Brnch_ID); activeTab = 'order_now'" class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-2xl hover:border-[#006738] transition-all cursor-pointer group">
+                            <div class="w-16 h-16 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner">
+                                <i data-lucide="map-pin" class="w-8 h-8"></i>
+                            </div>
+                            <h4 class="font-black text-slate-800 text-xl font-poppins mb-2" x-text="branch.Brnch_Name"></h4>
+                            <p class="text-slate-400 text-sm font-medium mb-4 flex items-center gap-2">
+                                <i data-lucide="navigation" class="w-4 h-4 text-[#006738]"></i>
+                                <span x-text="branch.Brnch_City"></span>
+                            </p>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#006738] bg-green-50 px-3 py-1 rounded-full">Open Now</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
 
         <!-- Manage Branches Tab -->
@@ -1497,66 +1592,6 @@ $user_id = $_SESSION['user_id'];
 
         <!-- Customer Tabs -->
         <div x-show="activeTab === 'order_now' && !selectedBranch" x-cloak>
-            <!-- Hero Carousel -->
-            <div class="relative w-full h-[400px] mb-12 rounded-[2.5rem] overflow-hidden group shadow-2xl">
-                <template x-for="(item, index) in carouselItems" :key="index">
-                    <div x-show="currentCarousel === index" 
-                         x-transition:enter="transition ease-out duration-500"
-                         x-transition:enter-start="opacity-0 scale-105"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         class="absolute inset-0">
-                        <img :src="item.image" class="w-full h-full object-cover brightness-75" :alt="item.title">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-12">
-                            <h2 class="text-white text-5xl font-black font-poppins mb-2" x-text="item.title"></h2>
-                            <p class="text-[#ffec00] text-xl font-black tracking-widest mb-8" x-text="item.subtitle"></p>
-                            <button class="bg-[#ffec00] text-black font-black px-8 py-4 rounded-full w-fit hover:scale-105 transition-transform shadow-xl shadow-yellow-500/20 uppercase tracking-widest text-sm">
-                                Order Now
-                            </button>
-                        </div>
-                    </div>
-                </template>
-                
-                <!-- Carousel Controls -->
-                <button @click="currentCarousel = (currentCarousel - 1 + carouselItems.length) % carouselItems.length" 
-                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
-                    <i data-lucide="chevron-left"></i>
-                </button>
-                <button @click="currentCarousel = (currentCarousel + 1) % carouselItems.length" 
-                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
-                    <i data-lucide="chevron-right"></i>
-                </button>
-                
-                <div class="absolute bottom-6 left-12 flex gap-2">
-                    <template x-for="(item, index) in carouselItems" :key="index">
-                        <button @click="currentCarousel = index" 
-                                :class="currentCarousel === index ? 'w-10 bg-[#ffec00]' : 'w-2 bg-white/50'"
-                                class="h-2 rounded-full transition-all duration-300"></button>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Featured Menu (Categories) -->
-            <div class="mb-12">
-                <div class="flex items-center justify-between mb-8">
-                    <h3 class="text-2xl font-black text-slate-800 font-poppins capitalize">Featured Selection</h3>
-                    <button class="text-green-600 font-bold flex items-center gap-1 hover:gap-2 transition-all">
-                        View All <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div class="flex gap-8 overflow-x-auto pb-4 no-scrollbar">
-                    <template x-for="cat in categories" :key="cat.name">
-                        <div class="flex flex-col items-center gap-4 group cursor-pointer flex-shrink-0" @click="selectedCategory = cat.name">
-                            <div :class="selectedCategory === cat.name ? 'bg-[#006738] text-white scale-110 shadow-xl shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100 hover:border-green-100'"
-                                 class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300">
-                                <i :data-lucide="cat.icon" class="w-10 h-10"></i>
-                            </div>
-                            <span :class="selectedCategory === cat.name ? 'text-[#006738] font-black' : 'text-slate-500 font-bold'"
-                                  class="text-xs transition-colors" x-text="cat.name"></span>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
             <div class="mb-10 text-center">
                 <h2 class="text-4xl font-black text-slate-800 font-poppins mb-2">Craving for Inasal?</h2>
                 <p class="text-slate-500 italic">Select your preferred branch to start grilling!</p>
@@ -1773,6 +1808,46 @@ $user_id = $_SESSION['user_id'];
                         <p class="text-slate-400 italic">No orders yet. Let's get grilling!</p>
                     </div>
                 </template>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'promos'" x-cloak>
+            <div class="mb-8">
+                <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Active Promos</h2>
+                <p class="text-slate-500 text-sm">Exclusive deals just for you!</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-[#006738] rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+                    <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
+                    <div class="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                            <span class="bg-[#ffec00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-full mb-4 inline-block">Flash Deal</span>
+                            <h3 class="text-3xl font-black font-poppins mb-2">P50 OFF</h3>
+                            <p class="text-green-100 font-black">On all Family Fiesta meals!</p>
+                        </div>
+                        <div class="mt-8">
+                            <p class="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Code: INASAL50</p>
+                            <button class="bg-white text-[#006738] font-black px-6 py-2 rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-transform">Apply Now</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] border-2 border-slate-100 p-8 relative overflow-hidden group">
+                    <div class="absolute inset-0 grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">
+                        <img src="https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover">
+                    </div>
+                    <div class="relative z-10 bg-white/90 backdrop-blur-sm p-6 rounded-3xl h-full flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800 font-poppins">Bigger & Juicier Pork BBQ</h3>
+                            <p class="text-slate-500 text-sm mt-1">Try our improved marinade today!</p>
+                        </div>
+                        <div class="mt-8 flex justify-between items-center">
+                            <span class="text-[#006738] font-black text-2xl">₱20 OFF</span>
+                            <button @click="activeTab = 'order_now'; selectedCategory = 'Pork BBQ'" class="bg-[#006738] text-white font-black px-6 py-2 rounded-xl text-xs uppercase tracking-widest">Order Now</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
