@@ -254,6 +254,35 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    async deleteBranch(id) {
+        if(!confirm('Are you sure you want to delete this branch? This cannot be undone.')) return;
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_branch', id })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchBranches();
+            this.fetchStats();
+        }
+    },
+
+    async deleteManager(id) {
+        if(!confirm('Are you sure you want to delete this manager account?')) return;
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_manager', id })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchManagers();
+            this.fetchBranches();
+            this.fetchStats();
+        }
+    },
+
     async submitStaff() {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
@@ -531,9 +560,14 @@ $user_id = $_SESSION['user_id'];
                             <div class="w-12 h-12 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center">
                                 <i data-lucide="store" class="w-6 h-6"></i>
                             </div>
-                            <span :class="branch.Brnch_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full">
-                                <span x-text="branch.Brnch_Status === 'Y' ? 'Active' : 'Closed'"></span>
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span :class="branch.Brnch_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full">
+                                    <span x-text="branch.Brnch_Status === 'Y' ? 'Active' : 'Closed'"></span>
+                                </span>
+                                <button @click="deleteBranch(branch.Brnch_ID)" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <h3 class="font-bold text-slate-800 text-lg mb-1" x-text="branch.Brnch_Name"></h3>
                         <p class="text-slate-500 text-sm mb-2" x-text="`${branch.Brnch_Street}, ${branch.Brnch_Brgy}, ${branch.Brnch_City}`"></p>
@@ -565,6 +599,7 @@ $user_id = $_SESSION['user_id'];
                                 <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
                                 <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
                                 <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Assigned Branch</th>
+                                <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -574,6 +609,11 @@ $user_id = $_SESSION['user_id'];
                                     <td class="p-4 text-sm text-slate-600" x-text="manager.Staff_Email"></td>
                                     <td class="p-4">
                                         <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button @click="deleteManager(manager.Staff_ID)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
@@ -641,6 +681,9 @@ $user_id = $_SESSION['user_id'];
                                             </button>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
                                                 <div class="w-2 h-2 rounded-full bg-red-500"></div> Mark as Resigned
+                                            </button>
+                                            <button @click="deleteManager(manager.Staff_ID); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-100 text-red-700 flex items-center gap-3 transition-colors border-t border-slate-50 mt-1">
+                                                <i data-lucide="trash-2" class="w-3 h-3"></i> Delete Account
                                             </button>
                                         </div>
                                     </div>

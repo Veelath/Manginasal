@@ -80,6 +80,31 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Manager status updated!']);
     }
+    elseif ($action === 'delete_branch') {
+        $id = $data['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'Branch ID required.']);
+            exit;
+        }
+
+        // Optional: Check if branch has staff/riders before deleting or let foreign keys handle it
+        $stmt = $pdo->prepare("DELETE FROM BRANCH WHERE Brnch_ID = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode(['success' => true, 'message' => 'Branch deleted successfully!']);
+    }
+    elseif ($action === 'delete_manager') {
+        $id = $data['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'Manager ID required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM STAFF WHERE Staff_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt->execute([$id]);
+
+        echo json_encode(['success' => true, 'message' => 'Manager deleted successfully!']);
+    }
     elseif ($action === 'create_menu') {
         $name = $data['name'] ?? '';
         $desc = $data['desc'] ?? '';
