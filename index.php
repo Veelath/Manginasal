@@ -81,6 +81,37 @@
 
                 <!-- Form -->
                 <form @submit.prevent="handleSubmit" class="space-y-5">
+                    <div class="grid grid-cols-2 gap-4" x-show="!isLogin && !isResetMode">
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">First Name</label>
+                            <div class="relative group">
+                                <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#006738] transition-colors"></i>
+                                <input type="text" :required="!isLogin && !isResetMode" x-model="fname" 
+                                       placeholder="Juan"
+                                       class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 transition-all outline-none">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Last Name</label>
+                            <div class="relative group">
+                                <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#006738] transition-colors"></i>
+                                <input type="text" :required="!isLogin && !isResetMode" x-model="lname" 
+                                       placeholder="Dela Cruz"
+                                       class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 transition-all outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2" x-show="!isLogin && !isResetMode">
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                        <div class="relative group">
+                            <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#006738] transition-colors"></i>
+                            <input type="tel" :required="!isLogin && !isResetMode" x-model="mobile" 
+                                   placeholder="09123456789" maxlength="11"
+                                   class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 transition-all outline-none">
+                        </div>
+                    </div>
+
                     <div class="space-y-2">
                         <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                         <div class="relative group">
@@ -137,6 +168,9 @@
             return {
                 isLogin: true,
                 isResetMode: false,
+                fname: '',
+                lname: '',
+                mobile: '',
                 email: '',
                 password: '',
                 loading: false,
@@ -145,6 +179,11 @@
                     this.isLogin = !this.isLogin;
                     this.isResetMode = false;
                     this.message = null;
+                    this.fname = '';
+                    this.lname = '';
+                    this.mobile = '';
+                    this.email = '';
+                    this.password = '';
                     this.$nextTick(() => lucide.createIcons());
                 },
                 toggleReset() {
@@ -165,6 +204,9 @@
                             body: JSON.stringify({
                                 email: this.email,
                                 password: this.password,
+                                fname: this.fname,
+                                lname: this.lname,
+                                mobile: this.mobile,
                                 action: action
                             })
                         });
@@ -186,6 +228,9 @@
                                     if(action === 'signup') {
                                         this.email = '';
                                         this.password = '';
+                                        this.fname = '';
+                                        this.lname = '';
+                                        this.mobile = '';
                                     }
                                     this.$nextTick(() => lucide.createIcons());
                                 }, 3000);

@@ -55,6 +55,15 @@ try {
         exit;
     }
     elseif ($action === 'signup') {
+        $fname = $data['fname'] ?? '';
+        $lname = $data['lname'] ?? '';
+        $mobile = $data['mobile'] ?? '';
+
+        if (empty($fname) || empty($lname) || empty($mobile)) {
+            echo json_encode(['success' => false, 'message' => 'All fields are required for signup.']);
+            exit;
+        }
+
         // Signups are usually for CUSTOMERS
         $stmt = $pdo->prepare("SELECT * FROM CUSTOMER WHERE Cust_Email = ?");
         $stmt->execute([$email]);
@@ -65,9 +74,9 @@ try {
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
-        // Simple signup (Names can be updated later in profile)
-        $stmt = $pdo->prepare("INSERT INTO CUSTOMER (Cust_FName, Cust_LName, Cust_Num, Cust_Email, Cust_Pass) VALUES ('New', 'User', '00000000000', ?, ?)");
-        $stmt->execute([$email, $hashedPassword]);
+        // Comprehensive signup
+        $stmt = $pdo->prepare("INSERT INTO CUSTOMER (Cust_FName, Cust_LName, Cust_Num, Cust_Email, Cust_Pass) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$fname, $lname, $mobile, $email, $hashedPassword]);
 
         echo json_encode(['success' => true, 'message' => 'Customer account created!']);
     } 
