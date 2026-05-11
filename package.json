@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "php -S 0.0.0.0:3000",
+    "build": "echo 'Static PHP build'",
+    "preview": "php -S 0.0.0.0:3000",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "echo 'No lint needed for PHP'"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

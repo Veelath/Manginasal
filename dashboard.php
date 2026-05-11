@@ -486,24 +486,27 @@ $user_id = $_SESSION['user_id'];
                                         'bg-green-100 text-green-700': manager.Staff_Status === 'Active' || manager.Staff_Status === 'Y',
                                         'bg-red-100 text-red-700': manager.Staff_Status === 'Resigned' || manager.Staff_Status === 'N',
                                         'bg-orange-100 text-orange-700': manager.Staff_Status === 'Suspended'
-                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Staff_Status === 'Y' ? 'Active' : (manager.Staff_Status === 'N' ? 'Inactive' : manager.Staff_Status)"></span>
+                                    }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" 
+                                       x-text="(manager.Staff_Status === 'Y' || manager.Staff_Status === 'Active') ? 'Active' : (manager.Staff_Status === 'N' || manager.Staff_Status === 'Resigned' ? 'Resigned' : manager.Staff_Status)">
+                                    </span>
                                 </td>
                                 <td class="p-4 text-right">
                                     <div class="flex justify-end gap-2 relative" x-data="{ open: false }">
-                                        <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                                            <i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i>
+                                        <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
+                                            <i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i>
                                         </button>
                                         <div x-show="open" @click.away="open = false" 
-                                             class="absolute right-0 top-full mt-1 bg-white border border-slate-100 rounded-xl shadow-xl z-[60] py-2 w-32 animate-in fade-in slide-in-from-top-2 duration-200"
+                                             class="absolute right-0 top-full mt-1 bg-white border border-slate-100 rounded-xl shadow-2xl z-[60] py-2 w-40 animate-in fade-in slide-in-from-top-2 duration-200"
                                              x-transition>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-green-600 flex items-center gap-2">
-                                                <div class="w-2 h-2 rounded-full bg-green-500"></div> Set Active
+                                            <div class="px-4 py-1 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Set Status</div>
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-2 transition-colors">
+                                                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Active
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-orange-600 flex items-center gap-2">
-                                                <div class="w-2 h-2 rounded-full bg-orange-500"></div> Suspend
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-2 transition-colors">
+                                                <div class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspended
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 text-red-600 flex items-center gap-2">
-                                                <div class="w-2 h-2 rounded-full bg-red-500"></div> Resign
+                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-2 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors">
+                                                <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Resigned
                                             </button>
                                         </div>
                                     </div>
