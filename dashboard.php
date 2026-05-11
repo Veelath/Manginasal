@@ -477,8 +477,9 @@ $user_id = $_SESSION['user_id'];
                     <span>Create Manager</span>
                 </button>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm">
-                <div class="overflow-visible p-1 pb-60">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-visible">
+                <div class="p-1 pb-[350px]">
+                    <div class="overflow-x-auto overflow-y-visible">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 border-b border-slate-100">
                             <tr>
@@ -510,22 +511,22 @@ $user_id = $_SESSION['user_id'];
                                     </span>
                                 </td>
                                 <td class="p-4 text-right">
-                                    <div class="flex justify-end gap-2 relative z-10" x-data="{ open: false }">
+                                    <div class="flex justify-end gap-2 relative z-[100]" x-data="{ open: false }">
                                         <button @click="open = !open" class="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
                                             <i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i>
                                         </button>
                                         <div x-show="open" @click.away="open = false" 
-                                             class="absolute right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl z-[70] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
+                                             class="absolute right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl z-[110] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
                                              x-transition x-cloak>
-                                            <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Account Status</div>
+                                            <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Update Account Status</div>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Set Active
+                                                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> Set as Active
                                             </button>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspend User
+                                                <div class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div> Suspend Account
                                             </button>
                                             <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
-                                                <div class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Mark Resigned
+                                                <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Mark as Resigned
                                             </button>
                                         </div>
                                     </div>
@@ -534,6 +535,8 @@ $user_id = $_SESSION['user_id'];
                         </template>
                     </tbody>
                 </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -584,32 +587,47 @@ $user_id = $_SESSION['user_id'];
 
         <div x-show="activeTab === 'menu'" x-cloak>
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 font-poppins">Global Menu</h2>
-                <button @click="showMenuModal = true" class="bg-[#006738] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] transition-colors">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Add Item</span>
-                </button>
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Global Menu</h2>
+                    <p class="text-slate-500 text-sm">Master list of all Mang Inasal products.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="fetchMenu()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                    <button @click="showMenuModal = true" class="bg-[#006738] text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] shadow-lg shadow-green-900/10 transition-all active:scale-95">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Add Global Item</span>
+                    </button>
+                </div>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Product Info</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Category</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Price</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <template x-if="menuItems.length === 0">
+                            <tr>
+                                <td colspan="4" class="p-12 text-center text-slate-400 italic">No menu items found. Click "Add Global Item" to start.</td>
+                            </tr>
+                        </template>
                         <template x-for="item in menuItems" :key="item.Menu_ID">
                             <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
                                     <div class="font-bold text-slate-800" x-text="item.Menu_Name"></div>
-                                    <div class="text-[10px] text-slate-400" x-text="item.Menu_Size"></div>
-                                    <div class="text-xs text-slate-400" x-text="item.Menu_Description"></div>
+                                    <div class="text-[10px] text-[#006738] font-black uppercase tracking-tighter" x-text="item.Menu_Size"></div>
+                                    <div class="text-[11px] text-slate-400 mt-1 italic line-clamp-1" x-text="item.Menu_Description"></div>
                                 </td>
-                                <td class="p-4 text-sm text-slate-600" x-text="item.Menu_Category"></td>
-                                <td class="p-4 text-sm font-black text-[#006738]" x-text="'₱' + item.Menu_Price"></td>
+                                <td class="p-4">
+                                    <span class="text-[10px] font-black uppercase px-2 py-1 rounded bg-slate-100 text-slate-600" x-text="item.Menu_Category"></span>
+                                </td>
+                                <td class="p-4 text-sm font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></td>
                                 <td class="p-4">
                                     <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700">Active</span>
                                 </td>
