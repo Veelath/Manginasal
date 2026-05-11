@@ -24,7 +24,7 @@ $user_id = $_SESSION['user_id'];
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-[#fcfbf7] font-outfit min-h-screen" x-data="{ 
+<body class="bg-[#fcfbf7] font-outfit min-h-screen overscroll-none" x-data="{ 
     sidebarOpen: true, 
     role: '<?php echo $role; ?>',
     activeTab: 'overview',
@@ -32,9 +32,8 @@ $user_id = $_SESSION['user_id'];
     managers: [],
     allUsers: [],
     workforce: [],
+    currentBranch: null,
     stats: { branches: 0, managers: 0, staff: 0, riders: 0 },
-    showBranchModal: false,
-    showManagerModal: false,
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
     newManager: { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: '' },
     newMenu: { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard' },
@@ -48,6 +47,14 @@ $user_id = $_SESSION['user_id'];
     showRiderModal: false,
     message: null,
 
+    closeAllModals() {
+        this.showBranchModal = false;
+        this.showManagerModal = false;
+        this.showMenuModal = false;
+        this.showStaffModal = false;
+        this.showRiderModal = false;
+    },
+
     init() {
         if(this.role === 'System Admin') {
             this.fetchBranches();
@@ -60,6 +67,19 @@ $user_id = $_SESSION['user_id'];
             this.fetchBranchMenu();
             this.fetchWorkforce();
             this.fetchBranchStats();
+            this.fetchBranchInfo();
+        }
+    },
+
+    async fetchBranchInfo() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_branch_info' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.currentBranch = data.branch;
+            this.$nextTick(() => lucide.createIcons());
         }
     },
 
@@ -370,9 +390,22 @@ $user_id = $_SESSION['user_id'];
         
         <!-- Top Bar -->
         <header class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 font-poppins capitalize"><?php echo str_replace('_', ' ', $role); ?> Dashboard</h1>
-                <p class="text-slate-500">Welcome back, we're ready to grill!</p>
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800 font-poppins capitalize"><?php echo str_replace('_', ' ', $role); ?> Dashboard</h1>
+                    <p class="text-slate-500">Welcome back, we're ready to grill!</p>
+                </div>
+                <template x-if="currentBranch">
+                    <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-2xl shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
+                        <div class="w-8 h-8 bg-green-50 text-[#006738] rounded-lg flex items-center justify-center">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Assigned Branch</p>
+                            <p class="text-xs font-bold text-slate-700" x-text="currentBranch.Brnch_Name + ' - ' + currentBranch.Brnch_City"></p>
+                        </div>
+                    </div>
+                </template>
             </div>
             <div class="flex items-center gap-4">
                 <button class="p-2 bg-white rounded-xl shadow-sm border text-slate-400 hover:text-[#006738]">
@@ -420,7 +453,7 @@ $user_id = $_SESSION['user_id'];
         </section>
 
         <!-- Dynamic Role Content -->
-        <div x-show="activeTab === 'overview'" class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div x-show="activeTab === 'overview'" class="space-y-8">
             <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-8 md:p-12 relative group">
                 <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                     <i data-lucide="flame" class="w-64 h-64 text-[#006738]"></i>
@@ -447,9 +480,9 @@ $user_id = $_SESSION['user_id'];
                         <?php endif; ?>
                     </p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
                         <?php if($role === 'Branch Manager'): ?>
-                            <button @click="activeTab = 'workforce'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#006738] hover:text-white transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-green-900/10">
+                            <button @click="activeTab = 'workforce'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#006738] hover:text-white transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-green-900/10 cursor-pointer">
                                 <div class="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-[#006738] group-hover:bg-white/10 group-hover:text-white transition-colors shadow-sm">
                                     <i data-lucide="user-plus" class="w-7 h-7"></i>
                                 </div>
@@ -458,7 +491,7 @@ $user_id = $_SESSION['user_id'];
                                     <p class="text-xs opacity-60">Add Personnel</p>
                                 </div>
                             </button>
-                            <button @click="activeTab = 'availability'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#ffec00] hover:text-black transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-yellow-500/20">
+                            <button @click="activeTab = 'availability'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#ffec00] hover:text-black transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-yellow-500/20 cursor-pointer">
                                 <div class="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-yellow-600 group-hover:bg-black/10 group-hover:text-black transition-colors shadow-sm">
                                     <i data-lucide="shopping-bag" class="w-7 h-7"></i>
                                 </div>
@@ -720,8 +753,8 @@ $user_id = $_SESSION['user_id'];
         </div>
 
         <!-- System Admin Modals -->
-        <div x-show="showBranchModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showBranchModal = false">
+        <div x-show="showBranchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showBranchModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
                     <h3 class="font-black text-xl font-poppins capitalize">Add New Branch</h3>
                     <button @click="showBranchModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -754,8 +787,8 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <div x-show="showManagerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showManagerModal = false">
+        <div x-show="showManagerModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showManagerModal = false">
                 <div class="p-6 bg-[#ffec00] text-black flex justify-between items-center">
                     <h3 class="font-black text-xl font-poppins capitalize">Create Manager Account</h3>
                     <button @click="showManagerModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -799,7 +832,7 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <div x-show="showMenuModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
+        <div x-show="showMenuModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showMenuModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
                     <h3 class="font-black text-xl font-poppins capitalize">Add Global Menu Item</h3>
@@ -925,8 +958,8 @@ $user_id = $_SESSION['user_id'];
         </div>
 
         <!-- Branch Manager Modals -->
-        <div x-show="showStaffModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showStaffModal = false">
+        <div x-show="showStaffModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showStaffModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
                     <h3 class="font-black text-xl font-poppins capitalize">Register Personnel</h3>
                     <button @click="showStaffModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -964,8 +997,8 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <div x-show="showRiderModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" @click.away="showRiderModal = false">
+        <div x-show="showRiderModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showRiderModal = false">
                 <div class="p-6 bg-[#ffec00] text-black flex justify-between items-center">
                     <h3 class="font-black text-xl font-poppins capitalize">Register Delivery Rider</h3>
                     <button @click="showRiderModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>

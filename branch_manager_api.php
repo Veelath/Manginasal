@@ -94,6 +94,12 @@ try {
             ]
         ]);
     }
+    elseif ($action === 'get_branch_info') {
+        $stmt = $pdo->prepare("SELECT * FROM BRANCH WHERE Brnch_ID = ?");
+        $stmt->execute([$branch_id]);
+        $branch = $stmt->fetch();
+        echo json_encode(['success' => true, 'branch' => $branch]);
+    }
     elseif ($action === 'toggle_menu') {
         $menu_id = $data['menu_id'];
         $status = $data['status']; // 'Y' or 'N'
