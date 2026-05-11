@@ -48,8 +48,8 @@
             <div class="relative z-10 space-y-6">
                 <div class="transition-all duration-700 delay-200">
                     <h2 class="text-white text-3xl md:text-4xl font-bold leading-tight font-poppins">
-                        Ito ang 2-in-1 sa laki, <br />
-                        <span class="text-[#ffec00]">Nuot sa ihaw-sarap!</span>
+                        The 2-in-1 Big Size, <br />
+                        <span class="text-[#ffec00]">Deep in Grilled-Goodness!</span>
                     </h2>
                     <p class="text-green-50/80 mt-4 text-lg">Authentic Filipino charcoal-grilled chicken that satisfies every craving.</p>
                 </div>
@@ -66,8 +66,8 @@
             <div class="space-y-6">
                 <!-- Header -->
                 <div class="space-y-1 text-center md:text-left">
-                    <h3 class="text-2xl font-bold text-slate-800 font-poppins" x-text="isLogin ? 'Welcome Back!' : 'Create Account'"></h3>
-                    <p class="text-slate-500 text-sm" x-text="isLogin ? 'Masarap na pagkain ang naghihintay sa iyo.' : 'Sumali sa pamilyang Mang Inasal ngayon!'"></p>
+                    <h3 class="text-2xl font-bold text-slate-800 font-poppins" x-text="isResetMode ? 'Reset Password' : (isLogin ? 'Welcome Back!' : 'Create Account')"></h3>
+                    <p class="text-slate-500 text-sm" x-text="isResetMode ? 'Enter your email to receive a temporary password.' : (isLogin ? 'Fresh grilled meals are waiting for you.' : 'Join the Mang Inasal family today!')"></p>
                 </div>
 
                 <!-- Messages -->
@@ -91,16 +91,16 @@
                         </div>
                     </div>
 
-                    <div class="space-y-2">
+                    <div class="space-y-2" x-show="!isResetMode">
                         <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
                         <div class="relative group">
                             <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#006738] transition-colors"></i>
-                            <input type="password" required x-model="password"
+                            <input type="password" :required="!isResetMode" x-model="password"
                                    placeholder="••••••••"
                                    class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 transition-all outline-none">
                         </div>
                         <div x-show="isLogin" class="flex justify-end mt-1">
-                            <button type="button" class="text-xs font-bold text-[#006738] hover:underline uppercase tracking-wider">Forgot?</button>
+                            <button type="button" @click="toggleReset" class="text-xs font-bold text-[#006738] hover:underline uppercase tracking-wider">Forgot?</button>
                         </div>
                     </div>
 
@@ -111,7 +111,7 @@
                         </template>
                         <template x-if="!loading">
                             <div class="flex items-center gap-2">
-                                <span class="uppercase tracking-widest" x-text="isLogin ? 'Login to Order' : 'Sign Up Now'"></span>
+                                <span class="uppercase tracking-widest" x-text="isResetMode ? 'Send Reset Link' : (isLogin ? 'Login to Order' : 'Sign Up Now')"></span>
                                 <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
                             </div>
                         </template>
@@ -121,9 +121,9 @@
                 <!-- Switch -->
                 <div class="pt-2 text-center">
                     <p class="text-sm font-medium text-slate-500">
-                        <span x-text="isLogin ? 'Don\'t have an account?' : 'Already have an account?'"></span>
-                        <button @click="toggleAuth" class="text-[#006738] font-black hover:underline uppercase tracking-tight">
-                            <span x-text="isLogin ? 'Sign Up' : 'Log In'"></span>
+                        <span x-text="isResetMode ? 'Remembered your password?' : (isLogin ? 'Don\'t have an account?' : 'Already have an account?')"></span>
+                        <button @click="isResetMode ? toggleReset() : toggleAuth()" class="text-[#006738] font-black hover:underline uppercase tracking-tight">
+                            <span x-text="isResetMode ? 'Go Back' : (isLogin ? 'Sign Up' : 'Log In')"></span>
                         </button>
                     </p>
                 </div>
@@ -136,18 +136,27 @@
         function authApp() {
             return {
                 isLogin: true,
+                isResetMode: false,
                 email: '',
                 password: '',
                 loading: false,
                 message: null,
                 toggleAuth() {
                     this.isLogin = !this.isLogin;
+                    this.isResetMode = false;
+                    this.message = null;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+                toggleReset() {
+                    this.isResetMode = !this.isResetMode;
                     this.message = null;
                     this.$nextTick(() => lucide.createIcons());
                 },
                 async handleSubmit() {
                     this.loading = true;
                     this.message = null;
+                    
+                    const action = this.isResetMode ? 'reset_password' : (this.isLogin ? 'login' : 'signup');
                     
                     try {
                         const response = await fetch('auth.php', {
@@ -156,7 +165,7 @@
                             body: JSON.stringify({
                                 email: this.email,
                                 password: this.password,
-                                action: this.isLogin ? 'login' : 'signup'
+                                action: action
                             })
                         });
                         
@@ -167,18 +176,19 @@
                         };
 
                         if (data.success) {
-                            if (this.isLogin) {
-                                // Redirect to dashboard on successful login
+                            if (action === 'login') {
                                 setTimeout(() => window.location.href = 'dashboard.php', 1000);
-                            } else {
-                                // Clear form on signup success to allow login
+                            } else if (action === 'signup' || action === 'reset_password') {
                                 setTimeout(() => {
                                     this.isLogin = true;
+                                    this.isResetMode = false;
                                     this.message = null;
-                                    this.email = '';
-                                    this.password = '';
+                                    if(action === 'signup') {
+                                        this.email = '';
+                                        this.password = '';
+                                    }
                                     this.$nextTick(() => lucide.createIcons());
-                                }, 2000);
+                                }, 3000);
                             }
                         }
                     } catch (err) {

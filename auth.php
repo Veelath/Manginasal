@@ -13,13 +13,48 @@ $email = $data['email'] ?? '';
 $password = $data['password'] ?? '';
 $action = $data['action'] ?? '';
 
-if (empty($email) || empty($password)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill all fields.']);
+if (empty($email)) {
+    echo json_encode(['success' => false, 'message' => 'Email is required.']);
+    exit;
+}
+
+if ($action !== 'reset_password' && empty($password)) {
+    echo json_encode(['success' => false, 'message' => 'Password is required.']);
     exit;
 }
 
 try {
-    if ($action === 'signup') {
+    if ($action === 'reset_password') {
+        // RESET PASSWORD LOGIC
+        // In a real app, this would send an email. 
+        // For this demo, we'll reset it to 'admin123' if it's the admin, 
+        // or a default for others, and return success.
+        
+        $newPass = 'admin123';
+        $hashed = password_hash($newPass, PASSWORD_DEFAULT);
+        
+        // Try STAFF first
+        $stmt = $pdo->prepare("UPDATE STAFF SET Staff_Pass = ? WHERE Staff_Email = ?");
+        $stmt->execute([$hashed, $email]);
+        
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => "Password reset for staff! New password: $newPass"]);
+            exit;
+        }
+
+        // Try CUSTOMER
+        $stmt = $pdo->prepare("UPDATE CUSTOMER SET Cust_Pass = ? WHERE Cust_Email = ?");
+        $stmt->execute([$hashed, $email]);
+
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => "Password reset for customer! New password: $newPass"]);
+            exit;
+        }
+
+        echo json_encode(['success' => false, 'message' => 'Email not found in our records.']);
+        exit;
+    }
+    elseif ($action === 'signup') {
         // Signups are usually for CUSTOMERS
         $stmt = $pdo->prepare("SELECT * FROM CUSTOMER WHERE Cust_Email = ?");
         $stmt->execute([$email]);
@@ -37,6 +72,19 @@ try {
         echo json_encode(['success' => true, 'message' => 'Customer account created!']);
     } 
     elseif ($action === 'login') {
+        // AUTO-CREATE ADMIN if STAFF table is empty or admin missing
+        $stmt = $pdo->prepare("SELECT * FROM STAFF WHERE Staff_Email = 'admin@inasal.com'");
+        $stmt->execute();
+        if (!$stmt->fetch()) {
+            $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
+            try {
+                $stmt = $pdo->prepare("INSERT IGNORE INTO STAFF (Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass, Staff_Status) VALUES ('System', 'Admin', 'admin@inasal.com', '09123456789', 'System Admin', ?, 'Active')");
+                $stmt->execute([$adminPass]);
+            } catch (Exception $e) {
+                // Table might not exist yet if user hasn't run SQL
+            }
+        }
+
         $user = null;
         $role = 'Customer';
 

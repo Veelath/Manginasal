@@ -129,6 +129,24 @@ try {
         ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'get_all_users') {
+        // Fetch from all tables to show the user exactly what they've created
+        $users = [];
+        
+        // 1. Staff
+        $stmt = $pdo->query("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_Role as role, 'Staff' as source FROM STAFF");
+        $users = array_merge($users, $stmt->fetchAll());
+        
+        // 2. Customers
+        $stmt = $pdo->query("SELECT Cust_ID as id, Cust_FName as fname, Cust_LName as lname, Cust_Email as email, 'Customer' as role, 'Customer' as source FROM CUSTOMER");
+        $users = array_merge($users, $stmt->fetchAll());
+        
+        // 3. Riders
+        $stmt = $pdo->query("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source FROM RIDER");
+        $users = array_merge($users, $stmt->fetchAll());
+        
+        echo json_encode(['success' => true, 'data' => $users]);
+    }
 } catch (Exception $e) {
      echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
