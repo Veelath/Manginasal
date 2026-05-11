@@ -274,38 +274,52 @@ $user_id = $_SESSION['user_id'];
 
         <nav class="flex-1 mt-6 px-4 space-y-2">
             <!-- Common Home -->
-            <a href="#" @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/20 transition-colors">
+            <a href="#" @click="activeTab = 'overview'" 
+               :class="activeTab === 'overview' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+               class="flex items-center gap-3 p-3 rounded-xl transition-all">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                <span x-show="sidebarOpen">Overview</span>
+                <span x-show="sidebarOpen" class="font-bold text-sm">Dashboard</span>
             </a>
 
             <?php if ($role === 'System Admin'): ?>
-                <a href="#" @click="activeTab = 'branches'" :class="activeTab === 'branches' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'branches'" 
+                   :class="activeTab === 'branches' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="store" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Manage Branches</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Branches</span>
                 </a>
-                <a href="#" @click="activeTab = 'menu'" :class="activeTab === 'menu' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/20 transition-colors">
+                <a href="#" @click="activeTab = 'menu'" 
+                   :class="activeTab === 'menu' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="utensils-cross-lines" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Global Menu</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Global Menu</span>
                 </a>
-                <a href="#" @click="activeTab = 'manage_managers'" :class="activeTab === 'manage_managers' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'manage_managers'" 
+                   :class="activeTab === 'manage_managers' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="users" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Manage Managers</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Managers</span>
                 </a>
-                <a href="#" @click="activeTab = 'user_directory'" :class="activeTab === 'user_directory' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'user_directory'" 
+                   :class="activeTab === 'user_directory' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="book-user" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">User Directory</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">User Directory</span>
                 </a>
             <?php endif; ?>
 
             <?php if ($role === 'Branch Manager'): ?>
-                <a href="#" @click="activeTab = 'workforce'" :class="activeTab === 'workforce' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'workforce'" 
+                   :class="activeTab === 'workforce' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="users-2" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">My Workforce</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Workforce</span>
                 </a>
-                <a href="#" @click="activeTab = 'availability'" :class="activeTab === 'availability' ? 'bg-white/10' : ''" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                <a href="#" @click="activeTab = 'availability'" 
+                   :class="activeTab === 'availability' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">Menu Availability</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Availability</span>
                 </a>
             <?php endif; ?>
 
@@ -373,65 +387,88 @@ $user_id = $_SESSION['user_id'];
         <!-- Stats Grid -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <?php if ($role === 'System Admin'): ?>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
-                        <i data-lucide="store" class="w-6 h-6"></i>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="store" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Branches</h3>
-                    <p class="text-3xl font-black text-slate-800" x-text="stats.branches"></p>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Total Branches</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.branches"></p>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                        <i data-lucide="users" class="w-6 h-6"></i>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Managers</h3>
-                    <p class="text-3xl font-black text-slate-800" x-text="stats.managers"></p>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Total Managers</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.managers"></p>
                 </div>
             <?php elseif ($role === 'Branch Manager'): ?>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                        <i data-lucide="users" class="w-6 h-6"></i>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Kitchen & Staff</h3>
-                    <p class="text-3xl font-black text-slate-800" x-text="stats.staff"></p>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Kitchen & Staff</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4">
-                        <i data-lucide="bike" class="w-6 h-6"></i>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="bike" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider">Rider Fleet</h3>
-                    <p class="text-3xl font-black text-slate-800" x-text="stats.riders"></p>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Rider Fleet</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
                 </div>
             <?php endif; ?>
         </section>
 
         <!-- Dynamic Role Content -->
-        <div x-show="activeTab === 'overview'" class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                <h2 class="font-bold text-slate-800">Operation Center</h2>
-                <button class="text-xs font-black uppercase text-[#006738] tracking-widest hover:underline">View All Task</button>
-            </div>
-            
-            <div class="p-8 min-h-[300px] flex flex-col items-center justify-center text-center">
-                <div class="mb-4 text-slate-200">
-                    <i data-lucide="construction" class="w-20 h-20"></i>
+        <div x-show="activeTab === 'overview'" class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-8 md:p-12 relative group">
+                <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                    <i data-lucide="flame" class="w-64 h-64 text-[#006738]"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-800 font-poppins">Feature in Development</h3>
-                <p class="text-slate-500 max-w-md mx-auto mt-2">
-                    As a <strong><?php echo $role; ?></strong>, you will soon be able to manage 
-                    <?php 
-                        if($role === 'System Admin') echo "branches and global menu settings.";
-                        elseif($role === 'Branch Manager') echo "driver recruitment and kitchen staff schedules.";
-                        elseif($role === 'Kitchen Staff') echo "incoming food orders in real-time.";
-                        elseif($role === 'Driver') echo "delivery routes and earnings.";
-                        else echo "your favorite inasal meals and track your orders.";
-                    ?>
-                </p>
-                <div class="mt-8 flex gap-4">
-                    <button @click="activeTab = 'branches'" class="bg-[#ffec00] text-black font-black px-6 py-3 rounded-2xl shadow-lg shadow-yellow-500/10 hover:scale-105 transition-transform flex items-center gap-2">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                        <span>Start First Action</span>
-                    </button>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-8">
+                        <span class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-[#006738] text-[10px] font-black uppercase tracking-widest rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Branch Live
+                        </span>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-full">
+                            <i data-lucide="clock" class="w-3 h-3"></i>
+                            Updated Just Now
+                        </span>
+                    </div>
+                    
+                    <h2 class="text-4xl font-black text-slate-800 font-poppins mb-6">Branch Command Center</h2>
+                    <p class="text-slate-400 max-w-xl text-lg leading-relaxed mb-10">
+                        <?php if($role === 'Branch Manager'): ?>
+                            Manage your restaurant operations with precision. Update menu availability, monitor your fleet, and grow your local team to keep the grill hot!
+                        <?php else: ?>
+                            Master overview of all Inasal branches. Monitor performance and maintain global menu consistency.
+                        <?php endif; ?>
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <?php if($role === 'Branch Manager'): ?>
+                            <button @click="activeTab = 'workforce'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#006738] hover:text-white transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-green-900/10">
+                                <div class="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-[#006738] group-hover:bg-white/10 group-hover:text-white transition-colors shadow-sm">
+                                    <i data-lucide="user-plus" class="w-7 h-7"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h4 class="font-black text-sm uppercase tracking-tight">Expand Team</h4>
+                                    <p class="text-xs opacity-60">Add Personnel</p>
+                                </div>
+                            </button>
+                            <button @click="activeTab = 'availability'" class="flex items-center gap-5 p-6 bg-[#fcfbf7] rounded-[2rem] hover:bg-[#ffec00] hover:text-black transition-all group border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-yellow-500/20">
+                                <div class="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-yellow-600 group-hover:bg-black/10 group-hover:text-black transition-colors shadow-sm">
+                                    <i data-lucide="shopping-bag" class="w-7 h-7"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h4 class="font-black text-sm uppercase tracking-tight">Daily Menu</h4>
+                                    <p class="text-xs opacity-60">Set Availability</p>
+                                </div>
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
