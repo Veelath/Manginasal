@@ -810,7 +810,6 @@ $user_id = $_SESSION['user_id'];
                     </div>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
 
         <div x-show="activeTab === 'overview' && role === 'Customer'" class="space-y-8" x-cloak>
@@ -1393,7 +1392,9 @@ $user_id = $_SESSION['user_id'];
                 </table>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if ($role === 'Branch Manager' || $role === 'Kitchen Staff'): ?>
         <div x-show="activeTab === 'orders'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <div>
@@ -1500,7 +1501,9 @@ $user_id = $_SESSION['user_id'];
                 </template>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if ($role === 'Branch Manager'): ?>
         <div x-show="activeTab === 'availability'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-black text-slate-800 font-poppins">Menu Availability</h2>
@@ -1523,8 +1526,10 @@ $user_id = $_SESSION['user_id'];
                 </template>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Rider Tab -->
+        <?php if ($role === 'Driver'): ?>
         <div x-show="activeTab === 'pending_deliveries'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <div>
@@ -1589,8 +1594,10 @@ $user_id = $_SESSION['user_id'];
                 </template>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Customer Tabs -->
+        <?php if ($role === 'Customer'): ?>
         <div x-show="activeTab === 'order_now' && !selectedBranch" x-cloak>
             <div class="mb-10 text-center">
                 <h2 class="text-4xl font-black text-slate-800 font-poppins mb-2">Craving for Inasal?</h2>
@@ -1927,7 +1934,10 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <?php endif; ?>
+
         <!-- Branch Manager Modals -->
+        <?php if ($role === 'Branch Manager' || $role === 'System Admin'): ?>
         <div x-show="showStaffModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showStaffModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
@@ -1997,8 +2007,6 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
         <?php endif; ?>
-
-
         <!-- Messages Toast -->
         <div x-show="message" x-transition x-cloak class="fixed bottom-8 right-8 z-[200]">
             <div :class="message?.success ? 'bg-green-600' : 'bg-red-600'" class="text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
