@@ -55,6 +55,11 @@ $user_id = $_SESSION['user_id'];
     orderItems: {}, // Track items by order ID
     cart: [],
     orderType: 'Delivery',
+    paymentMethod: 'Cash (COD)',
+    manualAddress: { province: 'Metro Manila', city: 'Manila', street: 'P. Gomez St.', brgy: 'Brgy 1', landmark: '' },
+    useCurrentAddress: true,
+    showTrackingModal: false,
+    selectedOrder: null,
     showBranchModal: false,
     currentCarousel: 0,
     carouselItems: [
@@ -109,6 +114,9 @@ $user_id = $_SESSION['user_id'];
             this.fetchBranchStats();
             this.fetchBranchInfo();
             this.fetchOrders();
+            if (this.role === 'Kitchen Staff') {
+                this.activeTab = 'orders';
+            }
         }
         if(this.role === 'Customer') {
             this.fetchCustomerBranches();
@@ -205,8 +213,10 @@ $user_id = $_SESSION['user_id'];
                 type: this.orderType,
                 items: this.cart.map(i => ({ menu_id: i.Menu_ID, qty: i.qty, price: i.Menu_Price })),
                 total: this.cartTotal,
-                name: 'Guest User', // Profile logic later
-                num: '09000000000'
+                name: this.profileData ? `${this.profileData.fname} ${this.profileData.lname}` : 'Guest User',
+                num: this.profileData ? this.profileData.mobile : '09000000000',
+                payment_method: this.paymentMethod,
+                address: this.useCurrentAddress ? null : this.manualAddress
             })
         });
         const data = await res.json();
@@ -724,6 +734,11 @@ $user_id = $_SESSION['user_id'];
                             <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Home</button>
                             <button @click="activeTab = 'order_now'" :class="activeTab === 'order_now' ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Menu</button>
                             <button @click="activeTab = 'order_now'; selectedBranch = null" :class="activeTab === 'order_now' && !selectedBranch ? 'text-[#006738] font-black' : 'text-slate-400 font-bold'" class="text-xs uppercase tracking-widest hover:text-[#006738] transition-colors">Stores</button>
+                        <?php elseif (in_array($role, ['Branch Manager', 'Kitchen Staff'])): ?>
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                <span class="text-sm font-bold" x-text="currentBranch ? currentBranch.Brnch_Name : 'Assigning Branch...'"></span>
+                            </div>
                         <?php else: ?>
                             <p class="text-slate-500">Welcome back, we're ready to grill!</p>
                         <?php endif; ?>
@@ -807,12 +822,32 @@ $user_id = $_SESSION['user_id'];
                     <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Kitchen & Staff</h3>
                     <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
                 </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden group">
                     <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
                         <i data-lucide="bike" class="w-7 h-7"></i>
                     </div>
                     <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Rider Fleet</h3>
                     <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="trending-up" class="w-7 h-7"></i>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Today's Sales</p>
+                            <h3 class="text-2xl font-black text-emerald-600" x-text="'₱' + parseFloat(stats.dailySales).toLocaleString()"></h3>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Progress</span>
+                            <span class="text-xs font-bold text-slate-600" x-text="Math.round((stats.dailySales / stats.dailyGoal) * 100) + '% of ₱' + stats.dailyGoal.toLocaleString()"></span>
+                        </div>
+                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 transition-all duration-1000" :style="'width: ' + Math.min(100, (stats.dailySales / stats.dailyGoal) * 100) + '%'"></div>
+                        </div>
+                    </div>
                 </div>
             <?php endif; ?>
         </section>
@@ -866,6 +901,24 @@ $user_id = $_SESSION['user_id'];
                                     <p class="text-xs opacity-60">Set Availability</p>
                                 </div>
                             </button>
+
+                            <!-- Rider Stats Leaderboard -->
+                            <div class="lg:col-span-1 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+                                <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest flex items-center gap-2">
+                                    <i data-lucide="trophy" class="w-3 h-3 text-yellow-500"></i> Rider Performance
+                                </h4>
+                                <div class="space-y-3">
+                                    <template x-for="rider in stats.riderPerformance" :key="rider.Rider_ID">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-2 h-2 rounded-full bg-green-500" :class="rider.stats > 0 ? 'bg-green-500' : 'bg-slate-200'"></div>
+                                                <span class="text-xs font-bold text-slate-600" x-text="rider.Rider_FName"></span>
+                                            </div>
+                                            <span class="text-[10px] font-black text-[#006738]" x-text="rider.stats + ' Drops'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1560,6 +1613,15 @@ $user_id = $_SESSION['user_id'];
             </div>
 
             <div class="space-y-4">
+                <template x-if="orders.length === 0">
+                    <div class="bg-white border-2 border-dashed border-slate-100 rounded-[2rem] p-12 text-center">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                            <i data-lucide="clipboard-x" class="w-10 h-10"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-slate-400 uppercase tracking-widest">No Active Orders</h3>
+                        <p class="text-slate-400 text-sm italic">New orders from customers will appear here.</p>
+                    </div>
+                </template>
                 <template x-for="order in orders" :key="order.Order_ID">
                     <div class="bg-white border-2 border-slate-50 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
                         <div class="flex flex-wrap justify-between items-start gap-4">
@@ -1579,7 +1641,10 @@ $user_id = $_SESSION['user_id'];
                                         }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="order.Order_Stat"></span>
                                     </div>
                                     <p class="text-xs text-slate-400 font-bold" x-text="`${order.Cust_FName} ${order.Cust_LName}`"></p>
-                                    <p class="text-[10px] text-slate-300 uppercase tracking-tighter" x-text="order.Order_Type"></p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <p class="text-[10px] text-slate-300 uppercase tracking-tighter" x-text="order.Order_Type"></p>
+                                        <span class="text-[10px] font-black text-[#006738] bg-green-50 px-2 py-0.5 rounded border border-green-100" x-text="order.Pay_Method"></span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1594,28 +1659,31 @@ $user_id = $_SESSION['user_id'];
                                 </div>
                                 
                                 <div class="flex gap-2">
-                                    <!-- Transitions -->
-                                    <template x-if="order.Order_Stat === 'Pending'">
+                                    <!-- Transitions: Restricted to Kitchen Staff per user request -->
+                                    <template x-if="order.Order_Stat === 'Pending' && role === 'Kitchen Staff'">
                                         <button @click="updateOrderStatus(order.Order_ID, 'Preparing')" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-bold text-xs">Start Cooking</button>
                                     </template>
-                                    <template x-if="order.Order_Stat === 'Preparing'">
+                                    <template x-if="order.Order_Stat === 'Preparing' && role === 'Kitchen Staff'">
                                         <button @click="updateOrderStatus(order.Order_ID, 'Ready')" class="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition-all font-bold text-xs">Mark as Ready</button>
                                     </template>
                                     
-                                    <!-- Dispatch Logic -->
-                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type === 'Delivery'">
+                                    <!-- Dispatch Logic: Both roles can send to rider or collect -->
+                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type === 'Delivery' && (role === 'Kitchen Staff' || role === 'Branch Manager')">
                                         <div class="flex items-center gap-2">
                                             <select class="p-3 bg-[#fcfbf7] border-2 border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-[#006738]" 
                                                     @change="assignRider(order.Order_ID, $event.target.value)">
                                                 <option value="">Assign Rider</option>
-                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider')" :key="rider.id">
-                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname"></option>
+                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider' && p.status === 'Y')" :key="rider.id">
+                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname + ' (Available)'"></option>
+                                                </template>
+                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider' && p.status !== 'Y')" :key="rider.id">
+                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname + ' (Busy)'" disabled></option>
                                                 </template>
                                             </select>
                                         </div>
                                     </template>
 
-                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type !== 'Delivery'">
+                                    <template x-if="order.Order_Stat === 'Ready' && order.Order_Type !== 'Delivery' && (role === 'Kitchen Staff' || role === 'Branch Manager')">
                                         <button @click="updateOrderStatus(order.Order_ID, 'Completed')" class="p-3 bg-[#006738] text-white rounded-xl hover:shadow-lg transition-all font-bold text-xs">Mark Collected</button>
                                     </template>
 
@@ -1726,6 +1794,16 @@ $user_id = $_SESSION['user_id'];
                                     <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(order.Add_Street + ', ' + order.Add_City)" target="_blank" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-blue-600">
                                         <i data-lucide="external-link" class="w-3 h-3"></i>
                                     </a>
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t border-slate-50 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</p>
+                                    <p class="text-sm font-black text-[#006738]" x-text="order.Pay_Method"></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Collect Amount</p>
+                                    <p class="text-sm font-black text-slate-800" x-text="order.Pay_Method === 'Cash (COD)' ? '₱' + parseFloat(order.Pay_Amount).toFixed(0) : 'Already Paid'"></p>
                                 </div>
                             </div>
                         </div>
@@ -1906,6 +1984,44 @@ $user_id = $_SESSION['user_id'];
                                         class="py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Pickup</button>
                             </div>
                             
+                            <div class="space-y-3">
+                                <span class="font-black text-slate-400 uppercase text-[10px] tracking-widest pl-1">Payment Method</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button @click="paymentMethod = 'Cash (COD)'" 
+                                            :class="paymentMethod === 'Cash (COD)' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-white'"
+                                            class="py-3 border-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Cash (COD)</button>
+                                    <button @click="paymentMethod = 'E-Wallet'" 
+                                            :class="paymentMethod === 'E-Wallet' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-white'"
+                                            class="py-3 border-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">E-Wallet</button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3" x-show="orderType === 'Delivery'">
+                                <div class="flex justify-between items-center px-1">
+                                    <span class="font-black text-slate-400 uppercase text-[10px] tracking-widest">Delivery Address</span>
+                                    <button @click="useCurrentAddress = !useCurrentAddress" 
+                                            class="text-[10px] font-black text-[#006738] underline"
+                                            x-text="useCurrentAddress ? 'Change' : 'Use Current'"></button>
+                                </div>
+                                
+                                <template x-if="useCurrentAddress">
+                                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <p class="text-xs font-bold text-slate-600" x-text="addresses[0] ? addresses[0].Add_Street + ', ' + addresses[0].Add_City : 'No address set'"></p>
+                                    </div>
+                                </template>
+
+                                <template x-if="!useCurrentAddress">
+                                    <div class="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <input type="text" x-model="manualAddress.street" placeholder="Street / House No." class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs outline-none focus:border-[#006738]">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <input type="text" x-model="manualAddress.brgy" placeholder="Barangay" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
+                                            <input type="text" x-model="manualAddress.city" placeholder="City" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
+                                        </div>
+                                        <input type="text" x-model="manualAddress.landmark" placeholder="Nearest Landmark" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
+                                    </div>
+                                </template>
+                            </div>
+
                             <div class="flex justify-between items-center py-2">
                                 <span class="font-black text-slate-400 uppercase text-xs">Total Amount</span>
                                 <span class="text-3xl font-black text-[#006738]" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></span>
@@ -1953,13 +2069,16 @@ $user_id = $_SESSION['user_id'];
                                 <p class="text-[10px] font-black uppercase text-slate-300">Total</p>
                                 <p class="font-black text-[#006738]" x-text="'₱' + parseFloat(order.Order_Total_Amount).toFixed(0)"></p>
                             </div>
-                            <span :class="{
-                                'bg-orange-100 text-orange-700': order.Order_Stat === 'Pending',
-                                'bg-blue-100 text-blue-700': order.Order_Stat === 'Preparing',
-                                'bg-purple-100 text-purple-700': order.Order_Stat === 'Ready',
-                                'bg-green-100 text-green-700': order.Order_Stat === 'Delivering',
-                                'bg-slate-100 text-slate-800': order.Order_Stat === 'Completed'
-                            }" class="text-[10px] font-black uppercase px-3 py-2 rounded-full min-w-[100px] text-center" x-text="order.Order_Stat"></span>
+                            <div class="flex flex-col items-end gap-2">
+                                <span :class="{
+                                    'bg-orange-100 text-orange-700': order.Order_Stat === 'Pending',
+                                    'bg-blue-100 text-blue-700': order.Order_Stat === 'Preparing',
+                                    'bg-purple-100 text-purple-700': order.Order_Stat === 'Ready',
+                                    'bg-green-100 text-green-700': order.Order_Stat === 'Delivering',
+                                    'bg-slate-100 text-slate-800': order.Order_Stat === 'Completed'
+                                }" class="text-[10px] font-black uppercase px-3 py-2 rounded-full min-w-[100px] text-center" x-text="order.Order_Stat"></span>
+                                <button @click="selectedOrder = order; showTrackingModal = true" class="text-[10px] font-black text-[#006738] uppercase tracking-widest hover:underline px-2">View Receipt / Track</button>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -1968,6 +2087,90 @@ $user_id = $_SESSION['user_id'];
                         <p class="text-slate-400 italic">No orders yet. Let's get grilling!</p>
                     </div>
                 </template>
+            </div>
+
+            <!-- Tracking & Receipt Modal -->
+            <div x-show="showTrackingModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300" x-cloak x-transition>
+                <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden" @click.away="showTrackingModal = false">
+                    <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-[#006738] text-white">
+                        <div>
+                            <h3 class="font-black text-xl font-poppins capitalize" x-text="'Tracking #' + (selectedOrder ? selectedOrder.Order_Code : '')"></h3>
+                            <p class="text-xs font-bold text-white/70">Estimated Arrival: <span x-text="selectedOrder && selectedOrder.Dlvry_Current_ETA ? new Date(selectedOrder.Dlvry_Current_ETA).toLocaleTimeString() : 'N/A'"></span></p>
+                        </div>
+                        <button @click="showTrackingModal = false" class="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
+                    
+                    <div class="p-8 space-y-8">
+                        <!-- Tracking Status -->
+                        <div class="relative flex justify-between">
+                            <div class="absolute top-5 left-0 right-0 h-1 bg-slate-100 z-0">
+                                <div class="h-full bg-[#006738] transition-all duration-500" :style="{
+                                    width: selectedOrder?.Order_Stat === 'Pending' ? '0%' :
+                                           selectedOrder?.Order_Stat === 'Preparing' ? '25%' :
+                                           selectedOrder?.Order_Stat === 'Ready' ? '50%' :
+                                           selectedOrder?.Order_Stat === 'Delivering' ? '75%' : '100%'
+                                }"></div>
+                            </div>
+                            <template x-for="step in ['Pending', 'Preparing', 'Ready', 'Delivering', 'Completed']">
+                                <div class="relative z-10 flex flex-col items-center gap-2">
+                                    <div :class="selectedOrder?.Order_Stat === step || (['Preparing', 'Ready', 'Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Pending') || (['Ready', 'Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Preparing') || (['Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Ready') || (selectedOrder?.Order_Stat === 'Completed' && step === 'Delivering') ? 'bg-[#006738] text-white' : 'bg-white text-slate-300 border-2 border-slate-100'"
+                                         class="w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all">
+                                        <i x-show="selectedOrder?.Order_Stat === step" data-lucide="check" class="w-4 h-4"></i>
+                                        <span x-show="selectedOrder?.Order_Stat !== step" x-text="step[0]"></span>
+                                    </div>
+                                    <span class="text-[8px] font-black uppercase text-slate-400" x-text="step"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Info Grid -->
+                        <div class="grid grid-cols-2 gap-8 border-t border-b border-slate-50 py-8">
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-2">Payment Mode</p>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="font-bold text-slate-800 text-sm" x-text="selectedOrder?.Pay_Method || 'Cash'"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-2">Rider Information</p>
+                                <template x-if="selectedOrder?.Rider_FName">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                                            <i data-lucide="bike" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <span class="font-bold text-slate-800 text-sm block" x-text="selectedOrder?.Rider_FName + ' ' + selectedOrder?.Rider_LName"></span>
+                                            <span class="text-[10px] text-slate-400 font-bold" x-text="selectedOrder?.Rider_MobileNum"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="!selectedOrder?.Rider_FName">
+                                    <p class="text-xs text-slate-400 italic">Finding nearest rider...</p>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Timing Details -->
+                        <div class="space-y-4">
+                            <h4 class="text-xs font-black uppercase tracking-widest text-slate-800">Timeline</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                                    <span class="flex items-center gap-2"><i data-lucide="clock" class="w-3 h-3"></i> Pickup Time</span>
+                                    <span x-text="selectedOrder?.Dlvry_Pickup_Time ? new Date(selectedOrder.Dlvry_Pickup_Time).toLocaleTimeString() : 'N/A'"></span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                                    <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3"></i> Arrival Time</span>
+                                    <span x-text="selectedOrder?.Dlvry_Arrival_Time ? new Date(selectedOrder.Dlvry_Arrival_Time).toLocaleTimeString() : 'In Transit'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="showTrackingModal = false" class="w-full bg-[#fcfbf7] text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-100 transition-colors uppercase tracking-widest text-xs">Close Details</button>
+                    </div>
+                </div>
             </div>
         </div>
 

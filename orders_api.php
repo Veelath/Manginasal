@@ -41,22 +41,37 @@ try {
         $total = $data['total'];
         $recipient_name = $data['name'];
         $recipient_num = $data['num'];
+        $payment_method = $data['payment_method'] ?? 'Cash';
+        $manual_address = $data['address'] ?? null; // {province, city, street, brgy, landmark}
 
         $order_code = 'MNGR-' . strtoupper(substr(uniqid(), 7));
 
         $pdo->beginTransaction();
         
         // Find or create address
-        $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? LIMIT 1");
-        $stmt->execute([$user_id]);
-        $addr = $stmt->fetch();
-        
-        if (!$addr) {
-            $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Label) VALUES (?, 'Metro Manila', 'Manila', 'Default St', 'Home')");
-            $stmt->execute([$user_id]);
+        if ($manual_address) {
+            $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Landmark, Add_Label) VALUES (?, ?, ?, ?, ?, 'Order Address')");
+            $stmt->execute([
+                $user_id, 
+                $manual_address['province'], 
+                $manual_address['city'], 
+                $manual_address['street'], 
+                $manual_address['landmark'] ?? '',
+                'Home'
+            ]);
             $address_id = $pdo->lastInsertId();
         } else {
-            $address_id = $addr['Add_ID'];
+            $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? LIMIT 1");
+            $stmt->execute([$user_id]);
+            $addr = $stmt->fetch();
+            
+            if (!$addr) {
+                $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Label) VALUES (?, 'Metro Manila', 'Manila', 'Default St', 'Home')");
+                $stmt->execute([$user_id]);
+                $address_id = $pdo->lastInsertId();
+            } else {
+                $address_id = $addr['Add_ID'];
+            }
         }
         
         $stmt = $pdo->prepare("
@@ -73,6 +88,10 @@ try {
         ]);
         
         $order_id = $pdo->lastInsertId();
+
+        // Create Payment record
+        $stmt = $pdo->prepare("INSERT INTO PAYMENT (Pay_Order_ID, Pay_Amount, Pay_Method, Pay_Status) VALUES (?, ?, ?, 'Pending')");
+        $stmt->execute([$order_id, $total, $payment_method]);
 
         foreach ($items as $idx => $item) {
             $stmt = $pdo->prepare("
@@ -91,7 +110,15 @@ try {
         echo json_encode(['success' => true, 'message' => "Order placed successfully! Order Code: $order_code", 'order_id' => $order_id]);
     }
     elseif ($action === 'get_customer_orders') {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE Order_Cust_ID = ? ORDER BY Order_ID DESC");
+        $stmt = $pdo->prepare("
+            SELECT o.*, p.Pay_Method, p.Pay_Status, d.Dlvry_Pickup_Time, d.Dlvry_Arrival_Time, d.Dlvry_Current_ETA, r.Rider_FName, r.Rider_LName, r.Rider_MobileNum
+            FROM orders o
+            LEFT JOIN PAYMENT p ON o.Order_ID = p.Pay_Order_ID
+            LEFT JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID
+            LEFT JOIN RIDER r ON d.Dlvry_Rider_ID = r.Rider_ID
+            WHERE o.Order_Cust_ID = ? 
+            ORDER BY o.Order_ID DESC
+        ");
         $stmt->execute([$user_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
@@ -112,11 +139,12 @@ try {
             exit;
         }
         $stmt = $pdo->prepare("
-            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City
+            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount
             FROM orders o
             JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
             JOIN ADDRESS a ON o.Order_Add_ID = a.Add_ID
             JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID
+            LEFT JOIN PAYMENT p ON o.Order_ID = p.Pay_Order_ID
             WHERE d.Dlvry_Rider_ID = ? AND o.Order_Stat = 'Delivering'
         ");
         $stmt->execute([$user_id]);
@@ -135,6 +163,16 @@ try {
         
         $stmt = $pdo->prepare("UPDATE DELIVERY SET Dlvry_Arrival_Time = NOW() WHERE Dlvry_Order_ID = ?");
         $stmt->execute([$order_id]);
+
+        // Get Rider ID for this delivery
+        $stmt = $pdo->prepare("SELECT Dlvry_Rider_ID FROM DELIVERY WHERE Dlvry_Order_ID = ?");
+        $stmt->execute([$order_id]);
+        $rider_id = $stmt->fetchColumn();
+
+        if ($rider_id) {
+            $stmt = $pdo->prepare("UPDATE RIDER SET Rider_Status = 'Y' WHERE Rider_ID = ?");
+            $stmt->execute([$rider_id]);
+        }
         
         $pdo->commit();
         echo json_encode(['success' => true, 'message' => 'Delivery completed!']);

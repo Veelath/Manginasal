@@ -58,7 +58,7 @@ try {
         $workforce = array_merge($workforce, $stmt->fetchAll());
         
         // Riders
-        $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source FROM RIDER WHERE Rider_Brnch_ID = ?");
+        $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source, Rider_Status as status FROM RIDER WHERE Rider_Brnch_ID = ?");
         $stmt->execute([$branch_id]);
         $workforce = array_merge($workforce, $stmt->fetchAll());
         
@@ -87,11 +87,31 @@ try {
         $stmt->execute([$branch_id]);
         $rider_count = $stmt->fetchColumn();
 
+        // Daily Sales
+        $stmt = $pdo->prepare("SELECT SUM(Order_Total_Amount) FROM orders WHERE Order_Brnch_ID = ? AND DATE(Order_Date) = CURDATE() AND Order_Stat = 'Completed'");
+        $stmt->execute([$branch_id]);
+        $daily_sales = $stmt->fetchColumn() ?: 0;
+
+        // Rider performance (successful deliveries today)
+        $stmt = $pdo->prepare("
+            SELECT r.Rider_ID, r.Rider_FName, r.Rider_LName, COUNT(o.Order_ID) as stats
+            FROM RIDER r
+            LEFT JOIN DELIVERY d ON r.Rider_ID = d.Dlvry_Rider_ID
+            LEFT JOIN orders o ON d.Dlvry_Order_ID = o.Order_ID AND DATE(o.Order_Date) = CURDATE() AND o.Order_Stat = 'Completed'
+            WHERE r.Rider_Brnch_ID = ?
+            GROUP BY r.Rider_ID
+        ");
+        $stmt->execute([$branch_id]);
+        $rider_stats = $stmt->fetchAll();
+
         echo json_encode([
             'success' => true, 
             'stats' => [
                 'staff' => $staff_count,
-                'riders' => $rider_count
+                'riders' => $rider_count,
+                'dailySales' => $daily_sales,
+                'dailyGoal' => 25000,
+                'riderPerformance' => $rider_stats
             ]
         ]);
     }
@@ -103,11 +123,12 @@ try {
     }
     elseif ($action === 'get_orders') {
         $stmt = $pdo->prepare("
-            SELECT o.*, c.Cust_FName, c.Cust_LName, r.Rider_FName, r.Rider_LName
+            SELECT o.*, c.Cust_FName, c.Cust_LName, r.Rider_FName, r.Rider_LName, p.Pay_Method, p.Pay_Status
             FROM orders o
             JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
             LEFT JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID
             LEFT JOIN RIDER r ON d.Dlvry_Rider_ID = r.Rider_ID
+            LEFT JOIN PAYMENT p ON o.Order_ID = p.Pay_Order_ID
             WHERE o.Order_Brnch_ID = ?
             ORDER BY o.Order_ID DESC
         ");
@@ -136,8 +157,12 @@ try {
             $stmt->execute([$order_id]);
 
             // Create new delivery
-            $stmt = $pdo->prepare("INSERT INTO DELIVERY (Dlvry_Order_ID, Dlvry_Rider_ID) VALUES (?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO DELIVERY (Dlvry_Order_ID, Dlvry_Rider_ID, Dlvry_Pickup_Time, Dlvry_Current_ETA) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))");
             $stmt->execute([$order_id, $rider_id]);
+
+            // Update rider availability - Rider becomes Busy ('N')
+            $stmt = $pdo->prepare("UPDATE RIDER SET Rider_Status = 'N' WHERE Rider_ID = ?");
+            $stmt->execute([$rider_id]);
 
             // Update order status
             $stmt = $pdo->prepare("UPDATE orders SET Order_Stat = 'Delivering' WHERE Order_ID = ?");
