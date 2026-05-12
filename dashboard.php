@@ -30,6 +30,8 @@ $user_id = $_SESSION['user_id'];
     activeTab: 'overview',
     branches: [],
     managers: [],
+    staffMembers: [],
+    riders: [],
     allUsers: [],
     workforce: [],
     orders: [],
@@ -49,6 +51,7 @@ $user_id = $_SESSION['user_id'];
     riderDeliveries: [],
     profileData: { fname: '', lname: '', email: '', mobile: '' },
     addresses: [],
+    showBranchPicker: true,
     orderItems: {}, // Track items by order ID
     cart: [],
     orderType: 'Delivery',
@@ -95,6 +98,8 @@ $user_id = $_SESSION['user_id'];
             this.fetchMenu();
             this.fetchStats();
             this.fetchManagers();
+            this.fetchStaff();
+            this.fetchRiders();
             this.fetchAllUsers();
             this.fetchReports();
         }
@@ -109,6 +114,7 @@ $user_id = $_SESSION['user_id'];
             this.fetchCustomerBranches();
             this.fetchCustomerOrders();
             this.fetchProfile();
+            this.showBranchPicker = !this.selectedBranch;
         }
         if(this.role === 'Driver') {
             this.fetchRiderDeliveries();
@@ -160,6 +166,7 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         if(data.success) {
             this.customerMenu = data.data;
+            this.showBranchPicker = false;
             this.$nextTick(() => lucide.createIcons());
         }
     },
@@ -334,6 +341,30 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         if(data.success) {
             this.managers = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async fetchStaff() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_staff' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.staffMembers = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async fetchRiders() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_riders' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.riders = data.data;
             this.$nextTick(() => lucide.createIcons());
         }
     },
@@ -534,10 +565,10 @@ $user_id = $_SESSION['user_id'];
     <!-- Sidebar -->
     <aside :class="sidebarOpen ? 'w-64' : 'w-20'" class="fixed left-0 top-0 h-full bg-[#006738] text-white transition-all duration-300 z-50 overflow-hidden hidden md:flex flex-col">
         <div class="p-6 flex items-center gap-3">
-            <div class="bg-white p-1 rounded-lg">
+            <div class="bg-white p-1 rounded-lg cursor-pointer" @click="activeTab = 'overview'">
                 <img src="logo.png" class="w-8 h-8 object-contain" alt="Mang Inasal">
             </div>
-            <span x-show="sidebarOpen" class="font-poppins font-black text-xl tracking-tight uppercase" x-transition>Inasal</span>
+            <span x-show="sidebarOpen" class="font-poppins font-black text-xl tracking-tight uppercase cursor-pointer" @click="activeTab = 'overview'" x-transition>Inasal</span>
         </div>
 
         <nav class="flex-1 mt-6 px-4 space-y-2">
@@ -566,7 +597,19 @@ $user_id = $_SESSION['user_id'];
                    :class="activeTab === 'manage_managers' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="users" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen" class="font-bold text-sm">Managers</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Branch Managers</span>
+                </a>
+                <a href="#" @click="activeTab = 'manage_staff'" 
+                   :class="activeTab === 'manage_staff' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="users-2" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Branch Staff</span>
+                </a>
+                <a href="#" @click="activeTab = 'manage_riders'" 
+                   :class="activeTab === 'manage_riders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="bike" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Rider Fleet</span>
                 </a>
                 <a href="#" @click="activeTab = 'user_directory'" 
                    :class="activeTab === 'user_directory' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
@@ -736,8 +779,22 @@ $user_id = $_SESSION['user_id'];
                     <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
                         <i data-lucide="users" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Total Managers</h3>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Managers</h3>
                     <p class="text-4xl font-black text-slate-800" x-text="stats.managers"></p>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="users-2" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Branch Staff</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                    <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i data-lucide="bike" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Riders</h3>
+                    <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
                 </div>
             <?php elseif ($role === 'Branch Manager'): ?>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
@@ -983,7 +1040,7 @@ $user_id = $_SESSION['user_id'];
 
         <div x-show="activeTab === 'manage_managers'" x-cloak>
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 font-poppins">Manager Workforce</h2>
+                <h2 class="text-xl font-black text-slate-800 font-poppins">Branch Managers</h2>
                 <button @click="showManagerModal = true" class="bg-[#ffec00] text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#e6d400] transition-colors">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                     <span>Create Manager</span>
@@ -1052,6 +1109,88 @@ $user_id = $_SESSION['user_id'];
                 </table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'manage_staff'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins">Branch Workforce (Staff)</h2>
+                    <p class="text-slate-500 text-sm italic">Overall view of kitchen and service staff per branch.</p>
+                </div>
+                <button @click="fetchStaff()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <template x-for="staff in staffMembers" :key="'staff'+staff.Staff_ID">
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4">
+                                    <div class="font-bold text-slate-800" x-text="`${staff.Staff_FName} ${staff.Staff_LName}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="staff.Staff_MobileNum"></div>
+                                </td>
+                                <td class="p-4 text-sm text-slate-600" x-text="staff.Staff_Email"></td>
+                                <td class="p-4">
+                                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="staff.Brnch_Name"></span>
+                                </td>
+                                <td class="p-4">
+                                    <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700" x-text="staff.Staff_Status"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'manage_riders'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins">Rider Fleet (Global)</h2>
+                    <p class="text-slate-500 text-sm italic">Tracking all delivery riders across the network.</p>
+                </div>
+                <button @click="fetchRiders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch Assignment</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <template x-for="rider in riders" :key="'rider'+rider.Rider_ID">
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4">
+                                    <div class="font-bold text-slate-800" x-text="`${rider.Rider_FName} ${rider.Rider_LName}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="rider.Rider_MobileNum"></div>
+                                </td>
+                                <td class="p-4 text-sm text-slate-600" x-text="rider.Rider_Email"></td>
+                                <td class="p-4">
+                                    <span class="bg-yellow-100 text-yellow-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.Brnch_Name"></span>
+                                </td>
+                                <td class="p-4">
+                                    <span :class="rider.Rider_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.Rider_Status === 'Y' ? 'Available' : 'Busy'"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1316,7 +1455,10 @@ $user_id = $_SESSION['user_id'];
                             <select x-model="newMenu.category" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
                                 <option>Chicken</option>
                                 <option>Pork</option>
+                                <option>Family Fiesta</option>
+                                <option>Buddy Fiesta</option>
                                 <option>Dessert</option>
+                                <option>Palabok</option>
                                 <option>Drinks</option>
                                 <option>Sides</option>
                             </select>
@@ -1667,7 +1809,7 @@ $user_id = $_SESSION['user_id'];
                     <h3 class="text-xl font-black text-slate-800 font-poppins mb-6 pb-2 border-b-2 border-green-50" x-text="selectedCategory"></h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
-                        <template x-for="item in customerMenu.filter(i => (!searchQuery || i.Menu_Name.toLowerCase().includes(searchQuery.toLowerCase())) && (i.Menu_Category === categories.find(c => c.name === selectedCategory).db || selectedCategory === 'Must Try!'))" :key="item.Menu_ID">
+                        <template x-for="item in customerMenu.filter(i => (!searchQuery || i.Menu_Name.toLowerCase().includes(searchQuery.toLowerCase())) && (i.Menu_Category === (categories.find(c => c.name === selectedCategory)?.db || '') || selectedCategory === 'Must Try!'))" :key="item.Menu_ID">
                             <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden relative">
                                 <!-- Save Badge -->
                                 <div class="absolute top-4 left-4 z-10">
@@ -2007,6 +2149,49 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Branch Selection Overlay for Customers -->
+        <div x-show="role === 'Customer' && !selectedBranch" 
+             class="fixed inset-0 bg-[#006738] z-[100] flex flex-col items-center justify-center p-6"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-cloak>
+            
+            <div class="max-w-4xl w-full text-center">
+                <div class="bg-white p-2 rounded-2xl w-24 h-24 mx-auto mb-8 shadow-2xl relative">
+                    <img src="logo.png" class="w-full h-full object-contain" alt="Mang Inasal">
+                    <div class="absolute -bottom-2 -right-2 bg-[#ffec00] text-black text-[10px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12">NEW</div>
+                </div>
+                
+                <h2 class="text-4xl md:text-6xl font-black text-white font-poppins mb-4 tracking-tight">KUNG SAAN ANG SARAP!</h2>
+                <p class="text-white/80 text-lg md:text-xl font-bold mb-12">Please select a branch to view our menu and start your order.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[50vh] overflow-y-auto no-scrollbar p-4">
+                    <template x-for="branch in customerBranches" :key="branch.Brnch_ID">
+                        <div @click="selectBranch(branch.Brnch_ID); activeTab = 'order_now'" 
+                             class="bg-white/10 backdrop-blur-md border-2 border-white/20 p-8 rounded-[2.5rem] hover:bg-white hover:border-[#ffec00] transition-all duration-300 cursor-pointer group text-left relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 w-20 h-20 bg-white/5 rounded-full group-hover:scale-150 transition-transform"></div>
+                            <div class="w-12 h-12 bg-[#ffec00] text-black rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg relative z-10">
+                                <i data-lucide="store" class="w-6 h-6"></i>
+                            </div>
+                            <div class="relative z-10">
+                                <h3 class="text-xl font-black text-white group-hover:text-slate-800 font-poppins mb-2 transition-colors" x-text="branch.Brnch_Name"></h3>
+                                <div class="flex items-center gap-2 text-white/60 group-hover:text-slate-500 text-sm font-medium transition-colors">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                    <span x-text="branch.Brnch_City"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-12 text-white/40 text-xs font-black uppercase tracking-[0.2em]">
+                    Authentic Filipino Grilled Chicken
+                </div>
+            </div>
+        </div>
+
         <!-- Messages Toast -->
         <div x-show="message" x-transition x-cloak class="fixed bottom-8 right-8 z-[200]">
             <div :class="message?.success ? 'bg-green-600' : 'bg-red-600'" class="text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">

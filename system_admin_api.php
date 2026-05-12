@@ -137,13 +137,34 @@ try {
     elseif ($action === 'get_stats') {
         $branchCount = $pdo->query("SELECT COUNT(*) FROM BRANCH")->fetchColumn();
         $managerCount = $pdo->query("SELECT COUNT(*) FROM STAFF WHERE Staff_Role = 'Branch Manager'")->fetchColumn();
+        $staffCount = $pdo->query("SELECT COUNT(*) FROM STAFF WHERE Staff_Role = 'Kitchen Staff'")->fetchColumn();
+        $riderCount = $pdo->query("SELECT COUNT(*) FROM RIDER")->fetchColumn();
         echo json_encode([
             'success' => true, 
             'stats' => [
                 'branches' => $branchCount,
-                'managers' => $managerCount
+                'managers' => $managerCount,
+                'staff' => $staffCount,
+                'riders' => $riderCount
             ]
         ]);
+    }
+    elseif ($action === 'get_staff') {
+        $stmt = $pdo->query("
+            SELECT s.*, b.Brnch_Name 
+            FROM STAFF s 
+            LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
+            WHERE s.Staff_Role = 'Kitchen Staff'
+        ");
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+    }
+    elseif ($action === 'get_riders') {
+        $stmt = $pdo->query("
+            SELECT r.*, b.Brnch_Name 
+            FROM RIDER r 
+            LEFT JOIN BRANCH b ON r.Rider_Brnch_ID = b.Brnch_ID
+        ");
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_managers') {
         $stmt = $pdo->query("

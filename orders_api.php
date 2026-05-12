@@ -23,8 +23,8 @@ try {
         $stmt = $pdo->prepare("
             SELECT m.* 
             FROM MENU_ITEM m 
-            JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID 
-            WHERE bm.Brnch_ID = ? AND bm.Is_Available = 'Y'
+            LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
+            WHERE m.Menu_Status = 'Y' AND (bm.Is_Available IS NULL OR bm.Is_Available = 'Y')
         ");
         $stmt->execute([$branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
