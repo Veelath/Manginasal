@@ -1129,6 +1129,7 @@ $user_id = $_SESSION['user_id'];
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Name</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Email</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Reports To</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
                         </tr>
                     </thead>
@@ -1142,6 +1143,13 @@ $user_id = $_SESSION['user_id'];
                                 <td class="p-4 text-sm text-slate-600" x-text="staff.Staff_Email"></td>
                                 <td class="p-4">
                                     <span class="bg-blue-100 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="staff.Brnch_Name"></span>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex items-center gap-2" x-show="staff.Mgr_FName">
+                                        <div class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-[8px] font-bold text-slate-600" x-text="staff.Mgr_FName[0]"></div>
+                                        <span class="text-xs font-bold text-slate-700" x-text="`${staff.Mgr_FName} ${staff.Mgr_LName}`"></span>
+                                    </div>
+                                    <span x-show="!staff.Mgr_FName" class="text-xs text-slate-400 italic">No Manager</span>
                                 </td>
                                 <td class="p-4">
                                     <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700" x-text="staff.Staff_Status"></span>

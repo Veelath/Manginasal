@@ -20,9 +20,10 @@ try {
         $mobile = $data['mobile'] ?? '';
         $role = $data['role'] ?? 'Kitchen Staff';
         $password = password_hash($data['password'] ?? 'staff123', PASSWORD_DEFAULT);
+        $mgr_id = $_SESSION['user_id']; // Manager ID from session
 
-        $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$branch_id, $fname, $lname, $email, $mobile, $role, $password]);
+        $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_Mgr_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$branch_id, $mgr_id, $fname, $lname, $email, $mobile, $role, $password]);
 
         echo json_encode(['success' => true, 'message' => 'Staff account created!']);
     }

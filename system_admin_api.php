@@ -44,24 +44,29 @@ try {
         }
 
         // 1. Check if Branch already has a manager
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Brnch_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM BRANCH_MANAGER WHERE Mgr_Brnch_ID = ?");
         $stmt->execute([$branch_id]);
         if ($stmt->fetchColumn() > 0) {
             echo json_encode(['success' => false, 'message' => 'This branch already has a manager assigned.']);
             exit;
         }
 
-        // 2. Check if Email already exists
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetchColumn() > 0) {
-            echo json_encode(['success' => false, 'message' => 'A user with this email already exists.']);
-            exit;
+        // 2. Check if Email already exists in any user table
+        $tables = ['SYSTEM_ADMIN', 'BRANCH_MANAGER', 'STAFF', 'RIDER', 'CUSTOMER'];
+        foreach($tables as $t) {
+            $prefix = ($t === 'SYSTEM_ADMIN') ? 'Admin' : (($t === 'BRANCH_MANAGER') ? 'Mgr' : (($t === 'RIDER') ? 'Rider' : (($t === 'CUSTOMER') ? 'Cust' : 'Staff')));
+            $col = $prefix . '_Email';
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM $t WHERE $col = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetchColumn() > 0) {
+                echo json_encode(['success' => false, 'message' => 'A user with this email already exists.']);
+                exit;
+            }
         }
 
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         
-        $stmt = $pdo->prepare("INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass, Staff_Status) VALUES (?, ?, ?, ?, ?, 'Branch Manager', ?, 'Active')");
+        $stmt = $pdo->prepare("INSERT INTO BRANCH_MANAGER (Mgr_Brnch_ID, Mgr_FName, Mgr_LName, Mgr_Email, Mgr_MobileNum, Mgr_Pass) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([$branch_id, $fname, $lname, $email, $mobile, $hashed]);
 
         echo json_encode(['success' => true, 'message' => 'Manager account created!']);
@@ -75,7 +80,7 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE STAFF SET Staff_Status = ? WHERE Staff_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt = $pdo->prepare("UPDATE BRANCH_MANAGER SET Mgr_Status = ? WHERE Mgr_ID = ?");
         $stmt->execute([$status, $id]);
 
         echo json_encode(['success' => true, 'message' => 'Manager status updated!']);
@@ -100,7 +105,7 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("DELETE FROM STAFF WHERE Staff_ID = ? AND Staff_Role = 'Branch Manager'");
+        $stmt = $pdo->prepare("DELETE FROM BRANCH_MANAGER WHERE Mgr_ID = ?");
         $stmt->execute([$id]);
 
         echo json_encode(['success' => true, 'message' => 'Manager deleted successfully!']);
@@ -128,16 +133,16 @@ try {
     }
     elseif ($action === 'get_branches') {
         $stmt = $pdo->query("
-            SELECT b.*, s.Staff_FName, s.Staff_LName 
+            SELECT b.*, m.Mgr_FName, m.Mgr_LName 
             FROM BRANCH b 
-            LEFT JOIN STAFF s ON b.Brnch_ID = s.Staff_Brnch_ID AND s.Staff_Role = 'Branch Manager'
+            LEFT JOIN BRANCH_MANAGER m ON b.Brnch_ID = m.Mgr_Brnch_ID
         ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_stats') {
         $branchCount = $pdo->query("SELECT COUNT(*) FROM BRANCH")->fetchColumn();
-        $managerCount = $pdo->query("SELECT COUNT(*) FROM STAFF WHERE Staff_Role = 'Branch Manager'")->fetchColumn();
-        $staffCount = $pdo->query("SELECT COUNT(*) FROM STAFF WHERE Staff_Role = 'Kitchen Staff'")->fetchColumn();
+        $managerCount = $pdo->query("SELECT COUNT(*) FROM BRANCH_MANAGER")->fetchColumn();
+        $staffCount = $pdo->query("SELECT COUNT(*) FROM STAFF")->fetchColumn();
         $riderCount = $pdo->query("SELECT COUNT(*) FROM RIDER")->fetchColumn();
         echo json_encode([
             'success' => true, 
@@ -151,9 +156,10 @@ try {
     }
     elseif ($action === 'get_staff') {
         $stmt = $pdo->query("
-            SELECT s.*, b.Brnch_Name 
+            SELECT s.*, b.Brnch_Name, m.Mgr_FName, m.Mgr_LName 
             FROM STAFF s 
             LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
+            LEFT JOIN BRANCH_MANAGER m ON s.Staff_Mgr_ID = m.Mgr_ID
             WHERE s.Staff_Role = 'Kitchen Staff'
         ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
@@ -168,26 +174,33 @@ try {
     }
     elseif ($action === 'get_managers') {
         $stmt = $pdo->query("
-            SELECT s.*, b.Brnch_Name 
-            FROM STAFF s 
-            LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
-            WHERE s.Staff_Role = 'Branch Manager'
+            SELECT m.*, b.Brnch_Name 
+            FROM BRANCH_MANAGER m 
+            LEFT JOIN BRANCH b ON m.Mgr_Brnch_ID = b.Brnch_ID
         ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_all_users') {
-        // Fetch from all tables to show the user exactly what they've created
+        // Fetch from all tables
         $users = [];
         
-        // 1. Staff
+        // 1. Admins
+        $stmt = $pdo->query("SELECT Admin_ID as id, Admin_FName as fname, Admin_LName as lname, Admin_Email as email, 'System Admin' as role, 'Admin' as source FROM SYSTEM_ADMIN");
+        $users = array_merge($users, $stmt->fetchAll());
+
+        // 2. Managers
+        $stmt = $pdo->query("SELECT Mgr_ID as id, Mgr_FName as fname, Mgr_LName as lname, Mgr_Email as email, 'Branch Manager' as role, 'Manager' as source FROM BRANCH_MANAGER");
+        $users = array_merge($users, $stmt->fetchAll());
+
+        // 3. Staff
         $stmt = $pdo->query("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_Role as role, 'Staff' as source FROM STAFF");
         $users = array_merge($users, $stmt->fetchAll());
         
-        // 2. Customers
+        // 4. Customers
         $stmt = $pdo->query("SELECT Cust_ID as id, Cust_FName as fname, Cust_LName as lname, Cust_Email as email, 'Customer' as role, 'Customer' as source FROM CUSTOMER");
         $users = array_merge($users, $stmt->fetchAll());
         
-        // 3. Riders
+        // 5. Riders
         $stmt = $pdo->query("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source FROM RIDER");
         $users = array_merge($users, $stmt->fetchAll());
         

@@ -39,21 +39,46 @@ CREATE TABLE IF NOT EXISTS ADDRESS (
     FOREIGN KEY (Add_Cust_ID) REFERENCES CUSTOMER(Cust_ID) ON DELETE CASCADE
 );
 
--- 4. STAFF TABLE (Handles Admin, Manager, Kitchen)
-CREATE TABLE IF NOT EXISTS STAFF (
-    Staff_ID INT AUTO_INCREMENT PRIMARY KEY,
-    Staff_Brnch_ID INT, -- NULL for Global System Admin
-    Staff_FName VARCHAR(35) NOT NULL,
-    Staff_LName VARCHAR(35) NOT NULL,
-    Staff_Email VARCHAR(50) UNIQUE NOT NULL, -- Added Email
-    Staff_MobileNum CHAR(11) NOT NULL,
-    Staff_Role VARCHAR(20) NOT NULL, -- 'System Admin', 'Branch Manager', 'Kitchen Staff'
-    Staff_Pass VARCHAR(255) NOT NULL,
-    Staff_Status VARCHAR(15) DEFAULT 'Active',
-    FOREIGN KEY (Staff_Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE SET NULL
+-- 4. LOGIN TABLES
+CREATE TABLE IF NOT EXISTS SYSTEM_ADMIN (
+    Admin_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Admin_FName VARCHAR(35) NOT NULL,
+    Admin_LName VARCHAR(35) NOT NULL,
+    Admin_Email VARCHAR(50) UNIQUE NOT NULL,
+    Admin_MobileNum CHAR(11) NOT NULL,
+    Admin_Pass VARCHAR(255) NOT NULL,
+    Admin_Status VARCHAR(15) DEFAULT 'Active'
 );
 
--- 5. RIDER TABLE (Drivers)
+CREATE TABLE IF NOT EXISTS BRANCH_MANAGER (
+    Mgr_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Mgr_Brnch_ID INT,
+    Mgr_FName VARCHAR(35) NOT NULL,
+    Mgr_LName VARCHAR(35) NOT NULL,
+    Mgr_Email VARCHAR(50) UNIQUE NOT NULL,
+    Mgr_MobileNum CHAR(11) NOT NULL,
+    Mgr_Pass VARCHAR(255) NOT NULL,
+    Mgr_Status VARCHAR(15) DEFAULT 'Active',
+    FOREIGN KEY (Mgr_Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE SET NULL
+);
+
+-- 5. STAFF TABLE (Now for Kitchen/Service Staff only)
+CREATE TABLE IF NOT EXISTS STAFF (
+    Staff_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Staff_Brnch_ID INT,
+    Staff_Mgr_ID INT, -- The Manager they report to
+    Staff_FName VARCHAR(35) NOT NULL,
+    Staff_LName VARCHAR(35) NOT NULL,
+    Staff_Email VARCHAR(50) UNIQUE NOT NULL,
+    Staff_MobileNum CHAR(11) NOT NULL,
+    Staff_Role VARCHAR(20) DEFAULT 'Kitchen Staff',
+    Staff_Pass VARCHAR(255) NOT NULL,
+    Staff_Status VARCHAR(15) DEFAULT 'Active',
+    FOREIGN KEY (Staff_Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE SET NULL,
+    FOREIGN KEY (Staff_Mgr_ID) REFERENCES BRANCH_MANAGER(Mgr_ID) ON DELETE SET NULL
+);
+
+-- 6. RIDER TABLE (Drivers)
 CREATE TABLE IF NOT EXISTS RIDER (
     Rider_ID INT AUTO_INCREMENT PRIMARY KEY,
     Rider_Brnch_ID INT NOT NULL,
@@ -172,9 +197,13 @@ INSERT INTO BRANCH (Brnch_Name, Brnch_Street, Brnch_Brgy, Brnch_City, Brnch_Prov
 VALUES ('Main Branch', 'P. Gomez St', 'Brgy 1', 'Manila', 'Metro Manila', 5.00, 'Y');
 
 -- Seed Admin (User: admin@inasal.com / Pass: password)
-INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass)
-VALUES (1, 'Admin', 'User', 'admin@inasal.com', '09123456789', 'System Admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+INSERT INTO SYSTEM_ADMIN (Admin_FName, Admin_LName, Admin_Email, Admin_MobileNum, Admin_Pass)
+VALUES ('System', 'Admin', 'admin@inasal.com', '09123456789', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
 -- Seed Branch Manager (User: manager1@inasal.com / Pass: password)
-INSERT INTO STAFF (Staff_Brnch_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass)
-VALUES (1, 'Manager1', 'User', 'manager1@inasal.com', '09987654321', 'Branch Manager', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+INSERT INTO BRANCH_MANAGER (Mgr_Brnch_ID, Mgr_FName, Mgr_LName, Mgr_Email, Mgr_MobileNum, Mgr_Pass)
+VALUES (1, 'Manager1', 'User', 'manager1@inasal.com', '09987654321', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+
+-- Seed Staff member (User: staff1@inasal.com / Pass: password)
+INSERT INTO STAFF (Staff_Brnch_ID, Staff_Mgr_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass)
+VALUES (1, 1, 'Staff1', 'User', 'staff1@inasal.com', '09888777665', 'Kitchen Staff', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');

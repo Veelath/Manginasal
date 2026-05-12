@@ -81,35 +81,48 @@ try {
         echo json_encode(['success' => true, 'message' => 'Customer account created!']);
     } 
     elseif ($action === 'login') {
-        // AUTO-CREATE ADMIN if STAFF table is empty or admin missing
-        $stmt = $pdo->prepare("SELECT * FROM STAFF WHERE Staff_Email = 'admin@inasal.com'");
+        // AUTO-CREATE ADMIN if SYSTEM_ADMIN table is empty
+        $stmt = $pdo->prepare("SELECT * FROM SYSTEM_ADMIN WHERE Admin_Email = 'admin@inasal.com'");
         $stmt->execute();
         if (!$stmt->fetch()) {
             $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
             try {
-                $stmt = $pdo->prepare("INSERT IGNORE INTO STAFF (Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass, Staff_Status) VALUES ('System', 'Admin', 'admin@inasal.com', '09123456789', 'System Admin', ?, 'Active')");
+                $stmt = $pdo->prepare("INSERT IGNORE INTO SYSTEM_ADMIN (Admin_FName, Admin_LName, Admin_Email, Admin_MobileNum, Admin_Pass, Admin_Status) VALUES ('System', 'Admin', 'admin@inasal.com', '09123456789', ?, 'Active')");
                 $stmt->execute([$adminPass]);
             } catch (Exception $e) {
-                // Table might not exist yet if user hasn't run SQL
+                // Table might not exist yet
             }
         }
 
         $user = null;
-        $role = 'Customer';
 
         // 1. Check Customer Table
-        $stmt = $pdo->prepare("SELECT Cust_ID as id, Cust_Email as email, Cust_Pass as pass, 'Customer' as role FROM CUSTOMER WHERE Cust_Email = ?");
+        $stmt = $pdo->prepare("SELECT Cust_ID as id, Cust_Email as email, Cust_Pass as pass, 'Customer' as role, NULL as branch_id FROM CUSTOMER WHERE Cust_Email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        // 2. If not found, check Staff Table
+        // 2. Check System Admin Table
+        if (!$user) {
+            $stmt = $pdo->prepare("SELECT Admin_ID as id, Admin_FName as name, Admin_Pass as pass, 'System Admin' as role, NULL as branch_id FROM SYSTEM_ADMIN WHERE Admin_Email = ?");
+            $stmt->execute([$email]); 
+            $user = $stmt->fetch();
+        }
+
+        // 3. Check Branch Manager Table
+        if (!$user) {
+            $stmt = $pdo->prepare("SELECT Mgr_ID as id, Mgr_FName as name, Mgr_Pass as pass, 'Branch Manager' as role, Mgr_Brnch_ID as branch_id FROM BRANCH_MANAGER WHERE Mgr_Email = ?");
+            $stmt->execute([$email]); 
+            $user = $stmt->fetch();
+        }
+
+        // 4. Check Staff Table
         if (!$user) {
             $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as name, Staff_Pass as pass, Staff_Role as role, Staff_Brnch_ID as branch_id FROM STAFF WHERE Staff_Email = ?");
             $stmt->execute([$email]); 
             $user = $stmt->fetch();
         }
 
-        // 3. If still not found, check Rider Table
+        // 5. Check Rider Table
         if (!$user) {
             $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as name, Rider_Pass as pass, 'Driver' as role, Rider_Brnch_ID as branch_id FROM RIDER WHERE Rider_Email = ?");
             $stmt->execute([$email]);
