@@ -55,8 +55,8 @@ $user_id = $_SESSION['user_id'];
     orderItems: {}, // Track items by order ID
     cart: [],
     orderType: 'Delivery',
-    paymentMethod: 'Cash (COD)',
-    manualAddress: { province: 'Metro Manila', city: 'Manila', street: 'P. Gomez St.', brgy: 'Brgy 1', landmark: '' },
+    paymentMethod: '',
+    manualAddress: { province: 'Metro Manila', city: '', street: '', brgy: '', landmark: '' },
     useCurrentAddress: true,
     showTrackingModal: false,
     selectedOrder: null,
@@ -196,13 +196,29 @@ $user_id = $_SESSION['user_id'];
     },
 
     get isCartValid() {
-        if (this.orderType === 'Delivery' && this.cartTotal < 200) return false;
-        return this.cart.length > 0;
+        if (this.cart.length === 0) return false;
+        if (this.orderType === 'Delivery') {
+            if (this.cartTotal < 200) return false;
+            if (!this.useCurrentAddress) {
+                if (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city) return false;
+            } else {
+                if (!this.addresses || this.addresses.length === 0) return false;
+            }
+        }
+        if (!this.paymentMethod) return false;
+        return true;
     },
 
     async placeOrder() {
         if(!this.isCartValid) {
-            this.message = { success: false, text: 'Minimum order of ₱200 required for delivery.' };
+            let reason = 'Please check your order details.';
+            if (this.cart.length === 0) reason = 'Your cart is empty.';
+            else if (this.orderType === 'Delivery' && this.cartTotal < 200) reason = 'Minimum order of ₱200 required for delivery.';
+            else if (this.orderType === 'Delivery' && !this.useCurrentAddress && (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city)) reason = 'Please provide a complete delivery address.';
+            else if (this.orderType === 'Delivery' && this.useCurrentAddress && (!this.addresses || this.addresses.length === 0)) reason = 'No saved address found. Please enter a manual address.';
+            else if (!this.paymentMethod) reason = 'Please select a payment method.';
+            
+            this.message = { success: false, text: reason };
             return;
         }
         const res = await fetch('orders_api.php', {
@@ -2027,13 +2043,29 @@ $user_id = $_SESSION['user_id'];
                                 <span class="text-3xl font-black text-[#006738]" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></span>
                             </div>
 
-                            <button @click="placeOrder()" 
-                                    :disabled="cart.length === 0 || !isCartValid"
-                                    :class="cart.length === 0 || !isCartValid ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 shadow-green-900/10'"
-                                    class="w-full bg-[#006738] text-white font-black py-5 rounded-[2rem] shadow-xl transition-all uppercase tracking-[0.2em] text-xs">
-                                Check Out Now
-                            </button>
-                            <p x-show="orderType === 'Delivery' && cartTotal < 200" class="text-[10px] text-red-500 text-center font-bold">Minimum ₱200 for delivery</p>
+                            <div class="space-y-4">
+                                <button @click="placeOrder()" 
+                                        :disabled="!isCartValid"
+                                        :class="!isCartValid ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 shadow-green-900/10'"
+                                        class="w-full bg-[#006738] text-white font-black py-5 rounded-[2rem] shadow-xl transition-all uppercase tracking-[0.2em] text-xs">
+                                    Check Out Now
+                                </button>
+                                
+                                <div class="space-y-1 text-center">
+                                    <p x-show="orderType === 'Delivery' && cartTotal < 200" class="text-[10px] text-red-500 font-black uppercase tracking-widest leading-none">
+                                        Min. ₱200 for delivery (Current: ₱<span x-text="cartTotal"></span>)
+                                    </p>
+                                    <p x-show="!paymentMethod" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
+                                        Please select payment method
+                                    </p>
+                                    <p x-show="orderType === 'Delivery' && !useCurrentAddress && (!manualAddress.street || !manualAddress.city || !manualAddress.brgy)" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
+                                        Please enter complete delivery address
+                                    </p>
+                                    <p x-show="orderType === 'Delivery' && useCurrentAddress && (!addresses || addresses.length === 0)" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
+                                        Saved address missing. Use manual entry.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

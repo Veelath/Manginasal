@@ -41,8 +41,24 @@ try {
         $total = $data['total'];
         $recipient_name = $data['name'];
         $recipient_num = $data['num'];
-        $payment_method = $data['payment_method'] ?? 'Cash';
+        $payment_method = $data['payment_method'] ?? null;
         $manual_address = $data['address'] ?? null; // {province, city, street, brgy, landmark}
+
+        if (!$payment_method) {
+            echo json_encode(['success' => false, 'message' => 'Payment method is required.']);
+            exit;
+        }
+
+        if ($type === 'Delivery' && !$manual_address) {
+            // Check if user has an existing address
+            $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? LIMIT 1");
+            $stmt->execute([$user_id]);
+            $addr = $stmt->fetch();
+            if (!$addr) {
+                echo json_encode(['success' => false, 'message' => 'Delivery address is required.']);
+                exit;
+            }
+        }
 
         $order_code = 'MNGR-' . strtoupper(substr(uniqid(), 7));
 
@@ -50,6 +66,11 @@ try {
         
         // Find or create address
         if ($manual_address) {
+            if (!$manual_address['street'] || !$manual_address['city']) {
+                echo json_encode(['success' => false, 'message' => 'Incomplete manual address provided.']);
+                $pdo->rollBack();
+                exit;
+            }
             $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Landmark, Add_Label) VALUES (?, ?, ?, ?, ?, 'Order Address')");
             $stmt->execute([
                 $user_id, 
@@ -57,7 +78,6 @@ try {
                 $manual_address['city'], 
                 $manual_address['street'], 
                 $manual_address['landmark'] ?? '',
-                'Home'
             ]);
             $address_id = $pdo->lastInsertId();
         } else {
@@ -66,7 +86,15 @@ try {
             $addr = $stmt->fetch();
             
             if (!$addr) {
-                $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Label) VALUES (?, 'Metro Manila', 'Manila', 'Default St', 'Home')");
+                // If somehow it reached here for non-delivery without address, maybe use a placeholder or error
+                if ($type === 'Delivery') {
+                    echo json_encode(['success' => false, 'message' => 'Delivery address not found.']);
+                    $pdo->rollBack();
+                    exit;
+                }
+                // For Dine-in/Take-out, address might be less critical but database requires FK
+                // We'll use branch address or a generic one if needed, but better to require address entry for profile
+                $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Label) VALUES (?, 'N/A', 'N/A', 'Branch Pickup/Dine-in', 'Store')");
                 $stmt->execute([$user_id]);
                 $address_id = $pdo->lastInsertId();
             } else {
