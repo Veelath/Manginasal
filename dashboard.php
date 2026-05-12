@@ -114,6 +114,9 @@ $user_id = $_SESSION['user_id'];
             this.fetchCustomerBranches();
             this.fetchCustomerOrders();
             this.fetchProfile();
+            if (!this.selectedBranch) {
+                this.activeTab = 'order_now';
+            }
             this.showBranchPicker = !this.selectedBranch;
         }
         if(this.role === 'Driver') {
@@ -991,7 +994,7 @@ $user_id = $_SESSION['user_id'];
                             <div class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                                 <i data-lucide="user" class="w-3 h-3"></i>
                             </div>
-                            <span class="text-xs font-bold text-slate-600" x-text="branch.Staff_FName ? `${branch.Staff_FName} ${branch.Staff_LName}` : 'No Manager Assigned'"></span>
+                            <span class="text-xs font-bold text-slate-600" x-text="branch.fname ? `${branch.fname} ${branch.lname}` : 'No Manager Assigned'"></span>
                         </div>
 
                         <div class="flex items-center gap-2 text-xs text-slate-400">
@@ -1018,15 +1021,15 @@ $user_id = $_SESSION['user_id'];
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="manager in managers" :key="manager.Staff_ID">
+                            <template x-for="manager in managers" :key="manager.id">
                                 <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                    <td class="p-4 font-bold text-slate-800" x-text="`${manager.Staff_FName} ${manager.Staff_LName}`"></td>
-                                    <td class="p-4 text-sm text-slate-600" x-text="manager.Staff_Email"></td>
+                                    <td class="p-4 font-bold text-slate-800" x-text="`${manager.fname} ${manager.lname}`"></td>
+                                    <td class="p-4 text-sm text-slate-600" x-text="manager.email"></td>
                                     <td class="p-4">
                                         <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
                                     </td>
                                     <td class="p-4 text-right">
-                                        <button @click="deleteManager(manager.Staff_ID)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
+                                        <button @click="deleteManager(manager.id)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
                                     </td>
@@ -1060,23 +1063,23 @@ $user_id = $_SESSION['user_id'];
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
-                        <template x-for="manager in managers" :key="manager.Staff_ID">
+                        <template x-for="manager in managers" :key="manager.id">
                             <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
-                                    <div class="font-bold text-slate-800" x-text="`${manager.Staff_FName} ${manager.Staff_LName}`"></div>
-                                    <div class="text-[10px] text-slate-400" x-text="manager.Staff_MobileNum"></div>
+                                    <div class="font-bold text-slate-800" x-text="`${manager.fname} ${manager.lname}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="manager.mobile"></div>
                                 </td>
-                                <td class="p-4 text-sm text-slate-600" x-text="manager.Staff_Email"></td>
+                                <td class="p-4 text-sm text-slate-600" x-text="manager.email"></td>
                                 <td class="p-4">
                                     <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
                                 </td>
                                 <td class="p-4">
                                     <span :class="{
-                                        'bg-green-100 text-green-700': manager.Staff_Status === 'Active' || manager.Staff_Status === 'Y',
-                                        'bg-red-100 text-red-700': manager.Staff_Status === 'Resigned' || manager.Staff_Status === 'N',
-                                        'bg-orange-100 text-orange-700': manager.Staff_Status === 'Suspended'
+                                        'bg-green-100 text-green-700': manager.status === 'Active' || manager.status === 'Y',
+                                        'bg-red-100 text-red-700': manager.status === 'Resigned' || manager.status === 'N',
+                                        'bg-orange-100 text-orange-700': manager.status === 'Suspended'
                                     }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" 
-                                       x-text="(manager.Staff_Status === 'Y' || manager.Staff_Status === 'Active') ? 'Active' : (manager.Staff_Status === 'N' || manager.Staff_Status === 'Resigned' ? 'Resigned' : manager.Staff_Status)">
+                                       x-text="(manager.status === 'Y' || manager.status === 'Active') ? 'Active' : (manager.status === 'N' || manager.status === 'Resigned' ? 'Resigned' : manager.status)">
                                     </span>
                                 </td>
                                 <td class="p-4 text-right">
@@ -1088,16 +1091,16 @@ $user_id = $_SESSION['user_id'];
                                              class="absolute right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[999] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
                                              x-transition x-cloak>
                                             <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Update Account Status</div>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
+                                            <button @click="updateManagerStatus(manager.id, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
                                                 <div class="w-2 h-2 rounded-full bg-green-500"></div> Set as Active
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Suspended'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-3 transition-colors">
+                                            <button @click="updateManagerStatus(manager.id, 'Suspended'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-orange-50 text-orange-600 flex items-center gap-3 transition-colors">
                                                 <div class="w-2 h-2 rounded-full bg-orange-500"></div> Suspend Account
                                             </button>
-                                            <button @click="updateManagerStatus(manager.Staff_ID, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
+                                            <button @click="updateManagerStatus(manager.id, 'Resigned'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors">
                                                 <div class="w-2 h-2 rounded-full bg-red-500"></div> Mark as Resigned
                                             </button>
-                                            <button @click="deleteManager(manager.Staff_ID); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-100 text-red-700 flex items-center gap-3 transition-colors border-t border-slate-50 mt-1">
+                                            <button @click="deleteManager(manager.id); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-red-100 text-red-700 flex items-center gap-3 transition-colors border-t border-slate-50 mt-1">
                                                 <i data-lucide="trash-2" class="w-3 h-3"></i> Delete Account
                                             </button>
                                         </div>
@@ -1134,13 +1137,13 @@ $user_id = $_SESSION['user_id'];
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <template x-for="staff in staffMembers" :key="'staff'+staff.Staff_ID">
+                        <template x-for="staff in staffMembers" :key="'staff'+staff.id">
                             <tr class="hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
-                                    <div class="font-bold text-slate-800" x-text="`${staff.Staff_FName} ${staff.Staff_LName}`"></div>
-                                    <div class="text-[10px] text-slate-400" x-text="staff.Staff_MobileNum"></div>
+                                    <div class="font-bold text-slate-800" x-text="`${staff.fname} ${staff.lname}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="staff.mobile"></div>
                                 </td>
-                                <td class="p-4 text-sm text-slate-600" x-text="staff.Staff_Email"></td>
+                                <td class="p-4 text-sm text-slate-600" x-text="staff.email"></td>
                                 <td class="p-4">
                                     <span class="bg-blue-100 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="staff.Brnch_Name"></span>
                                 </td>
@@ -1152,7 +1155,7 @@ $user_id = $_SESSION['user_id'];
                                     <span x-show="!staff.Mgr_FName" class="text-xs text-slate-400 italic">No Manager</span>
                                 </td>
                                 <td class="p-4">
-                                    <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700" x-text="staff.Staff_Status"></span>
+                                    <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700" x-text="staff.status"></span>
                                 </td>
                             </tr>
                         </template>
@@ -1182,18 +1185,18 @@ $user_id = $_SESSION['user_id'];
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <template x-for="rider in riders" :key="'rider'+rider.Rider_ID">
+                        <template x-for="rider in riders" :key="'rider'+rider.id">
                             <tr class="hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
-                                    <div class="font-bold text-slate-800" x-text="`${rider.Rider_FName} ${rider.Rider_LName}`"></div>
-                                    <div class="text-[10px] text-slate-400" x-text="rider.Rider_MobileNum"></div>
+                                    <div class="font-bold text-slate-800" x-text="`${rider.fname} ${rider.lname}`"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="rider.mobile"></div>
                                 </td>
-                                <td class="p-4 text-sm text-slate-600" x-text="rider.Rider_Email"></td>
+                                <td class="p-4 text-sm text-slate-600" x-text="rider.email"></td>
                                 <td class="p-4">
                                     <span class="bg-yellow-100 text-yellow-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.Brnch_Name"></span>
                                 </td>
                                 <td class="p-4">
-                                    <span :class="rider.Rider_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.Rider_Status === 'Y' ? 'Available' : 'Busy'"></span>
+                                    <span :class="rider.status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.status === 'Y' ? 'Available' : 'Busy'"></span>
                                 </td>
                             </tr>
                         </template>

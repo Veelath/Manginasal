@@ -133,7 +133,7 @@ try {
     }
     elseif ($action === 'get_branches') {
         $stmt = $pdo->query("
-            SELECT b.*, m.Mgr_FName, m.Mgr_LName 
+            SELECT b.*, m.Mgr_FName as fname, m.Mgr_LName as lname 
             FROM BRANCH b 
             LEFT JOIN BRANCH_MANAGER m ON b.Brnch_ID = m.Mgr_Brnch_ID
         ");
@@ -156,7 +156,7 @@ try {
     }
     elseif ($action === 'get_staff') {
         $stmt = $pdo->query("
-            SELECT s.*, b.Brnch_Name, m.Mgr_FName, m.Mgr_LName 
+            SELECT s.Staff_ID as id, s.Staff_Brnch_ID, s.Staff_Mgr_ID, s.Staff_FName as fname, s.Staff_LName as lname, s.Staff_Email as email, s.Staff_MobileNum as mobile, s.Staff_Role as role, s.Staff_Status as status, b.Brnch_Name, m.Mgr_FName, m.Mgr_LName 
             FROM STAFF s 
             LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
             LEFT JOIN BRANCH_MANAGER m ON s.Staff_Mgr_ID = m.Mgr_ID
@@ -166,7 +166,7 @@ try {
     }
     elseif ($action === 'get_riders') {
         $stmt = $pdo->query("
-            SELECT r.*, b.Brnch_Name 
+            SELECT r.Rider_ID as id, r.Rider_Brnch_ID, r.Rider_FName as fname, r.Rider_LName as lname, r.Rider_Email as email, r.Rider_MobileNum as mobile, r.Rider_Status as status, b.Brnch_Name 
             FROM RIDER r 
             LEFT JOIN BRANCH b ON r.Rider_Brnch_ID = b.Brnch_ID
         ");
@@ -174,7 +174,7 @@ try {
     }
     elseif ($action === 'get_managers') {
         $stmt = $pdo->query("
-            SELECT m.*, b.Brnch_Name 
+            SELECT m.Mgr_ID as id, m.Mgr_Brnch_ID, m.Mgr_FName as fname, m.Mgr_LName as lname, m.Mgr_Email as email, m.Mgr_MobileNum as mobile, m.Mgr_Status as status, b.Brnch_Name 
             FROM BRANCH_MANAGER m 
             LEFT JOIN BRANCH b ON m.Mgr_Brnch_ID = b.Brnch_ID
         ");
