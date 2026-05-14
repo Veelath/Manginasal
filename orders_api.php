@@ -38,25 +38,43 @@ try {
         $branch_id = $data['branch_id'];
         $type = $data['type']; // Delivery, Take-out, Dine-in
         $items = $data['items']; // Array of {menu_id, qty, price}
-        $total = $data['total'];
+        $total = floatval($data['total']);
         $recipient_name = $data['name'];
         $recipient_num = $data['num'];
         $payment_method = $data['payment_method'] ?? null;
         $manual_address = $data['address'] ?? null; // {province, city, street, brgy, landmark}
+
+        if (empty($items)) {
+            echo json_encode(['success' => false, 'message' => 'Your tray is empty.']);
+            exit;
+        }
 
         if (!$payment_method) {
             echo json_encode(['success' => false, 'message' => 'Payment method is required.']);
             exit;
         }
 
-        if ($type === 'Delivery' && !$manual_address) {
-            // Check if user has an existing address
-            $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? LIMIT 1");
-            $stmt->execute([$user_id]);
-            $addr = $stmt->fetch();
-            if (!$addr) {
-                echo json_encode(['success' => false, 'message' => 'Delivery address is required.']);
+        if ($type === 'Delivery') {
+            if ($total < 200) {
+                echo json_encode(['success' => false, 'message' => 'Minimum order for delivery is ₱200.']);
                 exit;
+            }
+
+            if (!$manual_address) {
+                // Check if user has a valid existing address (not a dummy one)
+                $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ? AND Add_City != 'N/A' AND Add_Street NOT LIKE '%Branch Pickup%' LIMIT 1");
+                $stmt->execute([$user_id]);
+                $addr = $stmt->fetch();
+                if (!$addr) {
+                    echo json_encode(['success' => false, 'message' => 'A valid delivery address is required. Please use manual entry if you haven\'t set one up.']);
+                    exit;
+                }
+            } else {
+                // Validate manual address fields
+                if (empty(trim($manual_address['street'])) || empty(trim($manual_address['city'])) || empty(trim($manual_address['brgy']))) {
+                    echo json_encode(['success' => false, 'message' => 'Please provide a complete delivery address (Street, Barangay, and City).']);
+                    exit;
+                }
             }
         }
 
@@ -66,11 +84,6 @@ try {
         
         // Find or create address
         if ($manual_address) {
-            if (!$manual_address['street'] || !$manual_address['city']) {
-                echo json_encode(['success' => false, 'message' => 'Incomplete manual address provided.']);
-                $pdo->rollBack();
-                exit;
-            }
             $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Landmark, Add_Label) VALUES (?, ?, ?, ?, ?, 'Order Address')");
             $stmt->execute([
                 $user_id, 
@@ -81,19 +94,17 @@ try {
             ]);
             $address_id = $pdo->lastInsertId();
         } else {
-            $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? LIMIT 1");
+            // For Delivery, use the same strict filter as validation
+            if ($type === 'Delivery') {
+                $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? AND Add_City != 'N/A' AND Add_Street NOT LIKE '%Branch Pickup%' ORDER BY Add_ID DESC LIMIT 1");
+            } else {
+                $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? ORDER BY Add_ID DESC LIMIT 1");
+            }
             $stmt->execute([$user_id]);
             $addr = $stmt->fetch();
             
             if (!$addr) {
-                // If somehow it reached here for non-delivery without address, maybe use a placeholder or error
-                if ($type === 'Delivery') {
-                    echo json_encode(['success' => false, 'message' => 'Delivery address not found.']);
-                    $pdo->rollBack();
-                    exit;
-                }
-                // For Dine-in/Take-out, address might be less critical but database requires FK
-                // We'll use branch address or a generic one if needed, but better to require address entry for profile
+                // For non-delivery, create dummy if none exists
                 $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Label) VALUES (?, 'N/A', 'N/A', 'Branch Pickup/Dine-in', 'Store')");
                 $stmt->execute([$user_id]);
                 $address_id = $pdo->lastInsertId();
@@ -197,9 +208,16 @@ try {
         $stmt->execute([$order_id]);
         $rider_id = $stmt->fetchColumn();
 
+        // Check if rider has any other active deliveries
         if ($rider_id) {
-            $stmt = $pdo->prepare("UPDATE RIDER SET Rider_Status = 'Y' WHERE Rider_ID = ?");
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders o JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID WHERE d.Dlvry_Rider_ID = ? AND o.Order_Stat = 'Delivering'");
             $stmt->execute([$rider_id]);
+            $remaining = $stmt->fetchColumn();
+            
+            if ($remaining == 0) {
+                $stmt = $pdo->prepare("UPDATE RIDER SET Rider_Status = 'Y' WHERE Rider_ID = ?");
+                $stmt->execute([$rider_id]);
+            }
         }
         
         $pdo->commit();

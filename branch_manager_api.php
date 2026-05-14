@@ -57,8 +57,18 @@ try {
         $stmt->execute([$branch_id]);
         $workforce = array_merge($workforce, $stmt->fetchAll());
         
-        // Riders
-        $stmt = $pdo->prepare("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source, Rider_Status as status FROM RIDER WHERE Rider_Brnch_ID = ?");
+        // Riders with active order count
+        $stmt = $pdo->prepare("
+            SELECT 
+                r.Rider_ID as id, r.Rider_FName as fname, r.Rider_LName as lname, 
+                r.Rider_Email as email, 'Driver' as role, 'Rider' as source, 
+                r.Rider_Status as status,
+                (SELECT COUNT(*) FROM orders o 
+                 JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID 
+                 WHERE d.Dlvry_Rider_ID = r.Rider_ID AND o.Order_Stat = 'Delivering') as active_orders
+            FROM RIDER r 
+            WHERE r.Rider_Brnch_ID = ?
+        ");
         $stmt->execute([$branch_id]);
         $workforce = array_merge($workforce, $stmt->fetchAll());
         

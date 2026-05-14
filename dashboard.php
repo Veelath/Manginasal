@@ -196,13 +196,16 @@ $user_id = $_SESSION['user_id'];
     },
 
     get isCartValid() {
-        if (this.cart.length === 0) return false;
+        if (!this.cart || this.cart.length === 0) return false;
         if (this.orderType === 'Delivery') {
             if (this.cartTotal < 200) return false;
             if (!this.useCurrentAddress) {
                 if (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city) return false;
             } else {
                 if (!this.addresses || this.addresses.length === 0) return false;
+                // Double check if the current address is not a dummy one
+                const current = this.addresses[0];
+                if (!current || current.Add_City === 'N/A' || current.Add_Street.includes('Branch Pickup')) return false;
             }
         }
         if (!this.paymentMethod) return false;
@@ -210,37 +213,51 @@ $user_id = $_SESSION['user_id'];
     },
 
     async placeOrder() {
+        // Double check validation before proceeding
         if(!this.isCartValid) {
-            let reason = 'Please check your order details.';
-            if (this.cart.length === 0) reason = 'Your cart is empty.';
-            else if (this.orderType === 'Delivery' && this.cartTotal < 200) reason = 'Minimum order of ₱200 required for delivery.';
-            else if (this.orderType === 'Delivery' && !this.useCurrentAddress && (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city)) reason = 'Please provide a complete delivery address.';
-            else if (this.orderType === 'Delivery' && this.useCurrentAddress && (!this.addresses || this.addresses.length === 0)) reason = 'No saved address found. Please enter a manual address.';
-            else if (!this.paymentMethod) reason = 'Please select a payment method.';
-            
+            let reason = 'Please complete your order details.';
+            if (!this.cart || this.cart.length === 0) reason = 'Your tray is empty. Add some items first!';
+            else if (this.orderType === 'Delivery' && this.cartTotal < 200) reason = 'Minimum order for delivery is ₱200.';
+            else if (!this.paymentMethod) reason = 'Please select a payment mode (COD or E-Wallet).';
+            else if (this.orderType === 'Delivery') {
+                if (this.useCurrentAddress) {
+                    if (!this.addresses || this.addresses.length === 0) reason = 'No saved address found. Please enter one manually.';
+                    else if (this.addresses[0].Add_City === 'N/A') reason = 'Your saved address is incomplete. Please enter one manually.';
+                } else if (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city) {
+                    reason = 'Please provide a complete manual address (Street, Barangay, and City).';
+                }
+            }
             this.message = { success: false, text: reason };
             return;
         }
-        const res = await fetch('orders_api.php', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                action: 'place_order', 
-                branch_id: this.selectedBranch.Brnch_ID,
-                type: this.orderType,
-                items: this.cart.map(i => ({ menu_id: i.Menu_ID, qty: i.qty, price: i.Menu_Price })),
-                total: this.cartTotal,
-                name: this.profileData ? `${this.profileData.fname} ${this.profileData.lname}` : 'Guest User',
-                num: this.profileData ? this.profileData.mobile : '09000000000',
-                payment_method: this.paymentMethod,
-                address: this.useCurrentAddress ? null : this.manualAddress
-            })
-        });
-        const data = await res.json();
-        this.message = { success: data.success, text: data.message };
-        if(data.success) {
-            this.cart = [];
-            this.activeTab = 'customer_orders';
-            this.fetchCustomerOrders();
+
+        try {
+            const res = await fetch('orders_api.php', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'place_order', 
+                    branch_id: this.selectedBranch.Brnch_ID,
+                    type: this.orderType,
+                    items: this.cart.map(i => ({ menu_id: i.Menu_ID, qty: i.qty, price: i.Menu_Price })),
+                    total: this.cartTotal,
+                    name: this.profileData ? `${this.profileData.fname} ${this.profileData.lname}` : 'Guest User',
+                    num: this.profileData ? this.profileData.mobile : '09000000000',
+                    payment_method: this.paymentMethod,
+                    address: this.useCurrentAddress ? null : this.manualAddress
+                })
+            });
+            const data = await res.json();
+            this.message = { success: data.success, text: data.message };
+            if(data.success) {
+                this.cart = [];
+                this.activeTab = 'customer_orders';
+                this.fetchCustomerOrders();
+                // Reset order state for next time
+                this.paymentMethod = '';
+                this.manualAddress = { province: 'Metro Manila', city: '', street: '', brgy: '', landmark: '' };
+            }
+        } catch (e) {
+            this.message = { success: false, text: 'Order failed: Connection error.' };
         }
     },
 
@@ -1689,11 +1706,8 @@ $user_id = $_SESSION['user_id'];
                                             <select class="p-3 bg-[#fcfbf7] border-2 border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-[#006738]" 
                                                     @change="assignRider(order.Order_ID, $event.target.value)">
                                                 <option value="">Assign Rider</option>
-                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider' && p.status === 'Y')" :key="rider.id">
-                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname + ' (Available)'"></option>
-                                                </template>
-                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider' && p.status !== 'Y')" :key="rider.id">
-                                                    <option :value="rider.id" x-text="rider.fname + ' ' + rider.lname + ' (Busy)'" disabled></option>
+                                                <template x-for="rider in workforce.filter(p => p.source === 'Rider')" :key="rider.id">
+                                                    <option :value="rider.id" x-text="`${rider.fname} ${rider.lname} (${rider.active_orders > 0 ? rider.active_orders + ' orders' : 'Available'})`"></option>
                                                 </template>
                                             </select>
                                         </div>
@@ -2447,6 +2461,46 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <!-- Footer -->
+        <footer class="mt-12 pt-12 border-t border-slate-100 pb-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="inline-block bg-[#ffec00] p-3 border-[3px] border-black rounded-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6">
+                        <div class="text-black font-poppins font-black leading-none tracking-tighter">
+                            <span class="block text-[10px] uppercase italic text-black">Mang</span>
+                            <span class="block text-2xl uppercase text-[#ed1c24] -mt-1">Inasal</span>
+                        </div>
+                    </div>
+                    <p class="text-slate-400 text-sm font-bold leading-relaxed max-w-sm">Experience the authentic charcoal-grilled goodness of the Philippines. Our 2-in-1 sa laki, nuot sa ihaw-sarap meals are here to satisfy your cravings.</p>
+                </div>
+                <div>
+                    <h4 class="font-black text-xs uppercase tracking-widest text-slate-800 mb-6">Explore</h4>
+                    <ul class="space-y-4 text-sm font-bold text-slate-400">
+                        <li><a href="#" class="hover:text-[#006738] transition-colors">Our Story</a></li>
+                        <li><a href="#" class="hover:text-[#006738] transition-colors">Career</a></li>
+                        <li><a href="#" class="hover:text-[#006738] transition-colors">Help Center</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-black text-xs uppercase tracking-widest text-slate-800 mb-6">Connect</h4>
+                    <div class="flex items-center gap-3 mb-6">
+                        <a href="#" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-[#006738] hover:text-white hover:border-[#006738] transition-all"><i data-lucide="facebook" class="w-5 h-5"></i></a>
+                        <a href="#" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-[#006738] hover:text-white hover:border-[#006738] transition-all"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+                    </div>
+                    <ul class="space-y-4 text-sm font-bold text-slate-400">
+                        <li><a href="#" class="hover:text-[#006738] transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-[#006738] transition-colors">Terms of Use</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-slate-50">
+                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest">© 2026 MANG INASAL PHILIPPINES INC. ALL RIGHTS RESERVED.</p>
+                <div class="flex items-center gap-4 opacity-30 grayscale">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" class="h-3 w-auto">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" class="h-5 w-auto">
+                </div>
+            </div>
+        </footer>
     </main>
 
     <script>
