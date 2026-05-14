@@ -349,6 +349,32 @@
                     this.message = null;
                     
                     const action = this.isResetMode ? 'reset_password' : (this.isLogin ? 'login' : 'signup');
+
+                    // Manual Validation
+                    if (action === 'signup') {
+                        if (!this.fname || !this.lname || !this.mobile || !this.email || !this.password) {
+                            this.message = { type: 'error', text: 'Please fill out all information to proceed.' };
+                            this.loading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                            return;
+                        }
+
+                        // Mobile Validation: 11 digits and only numbers
+                        const mobileRegex = /^[0-9]{11}$/;
+                        if (!mobileRegex.test(this.mobile)) {
+                            this.message = { type: 'error', text: 'Mobile number must be exactly 11 digits and only contain numbers (e.g., 09123456789).' };
+                            this.loading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                            return;
+                        }
+                    }
+
+                    if (this.email && !this.email.includes('@')) {
+                        this.message = { type: 'error', text: 'Please enter a valid email address with @ symbol.' };
+                        this.loading = false;
+                        this.$nextTick(() => lucide.createIcons());
+                        return;
+                    }
                     
                     try {
                         const response = await fetch('auth.php', {
