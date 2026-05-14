@@ -18,11 +18,6 @@ if (empty($email)) {
     exit;
 }
 
-if (!strpos($email, '@')) {
-    echo json_encode(['success' => false, 'message' => 'Invalid email format. Missing @ symbol.']);
-    exit;
-}
-
 if ($action !== 'reset_password' && empty($password)) {
     echo json_encode(['success' => false, 'message' => 'Password is required.']);
     exit;
@@ -66,6 +61,11 @@ try {
 
         if (empty($fname) || empty($lname) || empty($mobile)) {
             echo json_encode(['success' => false, 'message' => 'All fields are required for signup.']);
+            exit;
+        }
+
+        if (strpos($email, '@') === false) {
+            echo json_encode(['success' => false, 'message' => 'Account creation requires a valid email with @ symbol.']);
             exit;
         }
 

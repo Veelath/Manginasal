@@ -367,13 +367,13 @@
                             this.$nextTick(() => lucide.createIcons());
                             return;
                         }
-                    }
 
-                    if (this.email && !this.email.includes('@')) {
-                        this.message = { type: 'error', text: 'Please enter a valid email address with @ symbol.' };
-                        this.loading = false;
-                        this.$nextTick(() => lucide.createIcons());
-                        return;
+                        if (!this.email.includes('@')) {
+                            this.message = { type: 'error', text: 'Please enter a valid email address with @ symbol for signup.' };
+                            this.loading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                            return;
+                        }
                     }
                     
                     try {
