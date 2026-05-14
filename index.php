@@ -147,7 +147,7 @@
                                 <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                                 <div class="relative group">
                                     <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#006738]"></i>
-                                    <input type="email" required x-model="email" placeholder="kaingInasal@example.com" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 outline-none">
+                                    <input type="text" x-model="email" placeholder="kaingInasal@example.com" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-4 pl-12 pr-4 text-slate-800 outline-none">
                                 </div>
                             </div>
                             <div class="space-y-2" x-show="!isResetMode">
@@ -370,6 +370,13 @@
 
                         if (!this.email.includes('@')) {
                             this.message = { type: 'error', text: 'Please enter a valid email address with @ symbol for signup.' };
+                            this.loading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                            return;
+                        }
+                    } else if (action === 'login') {
+                        if (!this.email || !this.password) {
+                            this.message = { type: 'error', text: 'Please enter both email and password.' };
                             this.loading = false;
                             this.$nextTick(() => lucide.createIcons());
                             return;

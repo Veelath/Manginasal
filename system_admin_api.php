@@ -185,23 +185,23 @@ try {
         $users = [];
         
         // 1. Admins
-        $stmt = $pdo->query("SELECT Admin_ID as id, Admin_FName as fname, Admin_LName as lname, Admin_Email as email, 'System Admin' as role, 'Admin' as source FROM SYSTEM_ADMIN");
+        $stmt = $pdo->query("SELECT Admin_ID as id, Admin_FName as fname, Admin_LName as lname, Admin_Email as email, Admin_MobileNum as mobile, 'System Admin' as role, 'Admin' as source FROM SYSTEM_ADMIN");
         $users = array_merge($users, $stmt->fetchAll());
 
         // 2. Managers
-        $stmt = $pdo->query("SELECT Mgr_ID as id, Mgr_FName as fname, Mgr_LName as lname, Mgr_Email as email, 'Branch Manager' as role, 'Manager' as source FROM BRANCH_MANAGER");
+        $stmt = $pdo->query("SELECT Mgr_ID as id, Mgr_FName as fname, Mgr_LName as lname, Mgr_Email as email, Mgr_MobileNum as mobile, 'Branch Manager' as role, 'Manager' as source FROM BRANCH_MANAGER");
         $users = array_merge($users, $stmt->fetchAll());
 
         // 3. Staff
-        $stmt = $pdo->query("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_Role as role, 'Staff' as source FROM STAFF");
+        $stmt = $pdo->query("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_MobileNum as mobile, Staff_Role as role, 'Staff' as source FROM STAFF");
         $users = array_merge($users, $stmt->fetchAll());
         
         // 4. Customers
-        $stmt = $pdo->query("SELECT Cust_ID as id, Cust_FName as fname, Cust_LName as lname, Cust_Email as email, 'Customer' as role, 'Customer' as source FROM CUSTOMER");
+        $stmt = $pdo->query("SELECT Cust_ID as id, Cust_FName as fname, Cust_LName as lname, Cust_Email as email, Cust_Num as mobile, 'Customer' as role, 'Customer' as source FROM CUSTOMER");
         $users = array_merge($users, $stmt->fetchAll());
         
         // 5. Riders
-        $stmt = $pdo->query("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, 'Driver' as role, 'Rider' as source FROM RIDER");
+        $stmt = $pdo->query("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, Rider_MobileNum as mobile, 'Driver' as role, 'Rider' as source FROM RIDER");
         $users = array_merge($users, $stmt->fetchAll());
         
         echo json_encode(['success' => true, 'data' => $users]);
@@ -219,14 +219,48 @@ try {
             LIMIT 5
         ")->fetchAll();
         
-        echo json_encode([
-            'success' => true,
-            'data' => [
+        echo json_encode(['success' => true, 'data' => [
                 'dailySales' => $dailySales,
                 'totalOrders' => $totalOrders,
                 'topItems' => $topItems
             ]
         ]);
+    }
+    elseif ($action === 'delete_user') {
+        $id = $data['id'] ?? null;
+        $source = $data['source'] ?? '';
+
+        if (!$id || !$source) {
+            echo json_encode(['success' => false, 'message' => 'ID and source required.']);
+            exit;
+        }
+
+        $tableMap = [
+            'Admin' => ['table' => 'SYSTEM_ADMIN', 'col' => 'Admin_ID'],
+            'Manager' => ['table' => 'BRANCH_MANAGER', 'col' => 'Mgr_ID'],
+            'Staff' => ['table' => 'STAFF', 'col' => 'Staff_ID'],
+            'Customer' => ['table' => 'CUSTOMER', 'col' => 'Cust_ID'],
+            'Rider' => ['table' => 'RIDER', 'col' => 'Rider_ID']
+        ];
+
+        if (!isset($tableMap[$source])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid source.']);
+            exit;
+        }
+
+        $table = $tableMap[$source]['table'];
+        $col = $tableMap[$source]['col'];
+
+        // Don't allow deleting current admin
+        if ($source === 'Admin' && $id == $_SESSION['user_id']) {
+            echo json_encode(['success' => false, 'message' => 'You cannot delete your own account.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM $table WHERE $col = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode(['success' => true, 'message' => 'User deleted successfully!']);
     }
 } catch (Exception $e) {
      echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);

@@ -9,8 +9,8 @@ if (!$data) {
     exit;
 }
 
-$email = $data['email'] ?? '';
-$password = $data['password'] ?? '';
+$email = trim($data['email'] ?? '');
+$password = trim($data['password'] ?? '');
 $action = $data['action'] ?? '';
 
 if (empty($email)) {
@@ -27,10 +27,9 @@ try {
     if ($action === 'reset_password') {
         // RESET PASSWORD LOGIC
         // In a real app, this would send an email. 
-        // For this demo, we'll reset it to 'admin123' if it's the admin, 
-        // or a default for others, and return success.
+        // For this demo, we'll reset it to 'password'
         
-        $newPass = 'admin123';
+        $newPass = 'password';
         $hashed = password_hash($newPass, PASSWORD_DEFAULT);
         
         // Try STAFF first
@@ -51,13 +50,22 @@ try {
             exit;
         }
 
+        // Try ADMIN
+        $stmt = $pdo->prepare("UPDATE SYSTEM_ADMIN SET Admin_Pass = ? WHERE Admin_Email = ?");
+        $stmt->execute([$hashed, $email]);
+
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => "Password reset for admin! New password: $newPass"]);
+            exit;
+        }
+
         echo json_encode(['success' => false, 'message' => 'Email not found in our records.']);
         exit;
     }
     elseif ($action === 'signup') {
-        $fname = $data['fname'] ?? '';
-        $lname = $data['lname'] ?? '';
-        $mobile = $data['mobile'] ?? '';
+        $fname = trim($data['fname'] ?? '');
+        $lname = trim($data['lname'] ?? '');
+        $mobile = trim($data['mobile'] ?? '');
 
         if (empty($fname) || empty($lname) || empty($mobile)) {
             echo json_encode(['success' => false, 'message' => 'All fields are required for signup.']);
@@ -95,7 +103,7 @@ try {
         $stmt = $pdo->prepare("SELECT * FROM SYSTEM_ADMIN WHERE Admin_Email = 'admin@inasal.com'");
         $stmt->execute();
         if (!$stmt->fetch()) {
-            $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
+            $adminPass = password_hash('password', PASSWORD_DEFAULT);
             try {
                 $stmt = $pdo->prepare("INSERT IGNORE INTO SYSTEM_ADMIN (Admin_FName, Admin_LName, Admin_Email, Admin_MobileNum, Admin_Pass, Admin_Status) VALUES ('System', 'Admin', 'admin@inasal.com', '09123456789', ?, 'Active')");
                 $stmt->execute([$adminPass]);
@@ -140,11 +148,13 @@ try {
         }
 
         if (!$user || !password_verify($password, $user['pass'])) {
-            echo json_encode(['success' => false, 'message' => 'Invalid credentials.']);
+            echo json_encode(['success' => false, 'message' => 'Invalid credentials. Please ensure you typed your email and password correctly.']);
             exit;
         }
 
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['branch_id'] = $user['branch_id'] ?? null;

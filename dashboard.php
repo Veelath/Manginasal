@@ -579,6 +579,20 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    async deleteUser(id, source) {
+        if(!confirm('Are you sure you want to delete this account? This action cannot be undone.')) return;
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_user', id, source })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchAllUsers();
+            this.fetchStats();
+        }
+    },
+
     async submitStaff() {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
@@ -662,6 +676,12 @@ $user_id = $_SESSION['user_id'];
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="book-user" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">User Directory</span>
+                </a>
+                <a href="#" @click="activeTab = 'customer_tracking'" 
+                   :class="activeTab === 'customer_tracking' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="users-round" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Customers</span>
                 </a>
                 <a href="#" @click="activeTab = 'reports'" 
                    :class="activeTab === 'reports' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
@@ -1315,6 +1335,7 @@ $user_id = $_SESSION['user_id'];
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Login / Email</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Account Type</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Database Source</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1334,6 +1355,66 @@ $user_id = $_SESSION['user_id'];
                                 <td class="p-4">
                                     <div class="text-[10px] font-bold text-slate-300 uppercase tracking-widest" x-text="user.source"></div>
                                 </td>
+                                <td class="p-4 text-right">
+                                    <button @click="deleteUser(user.id, user.source)" 
+                                            class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                            x-show="!(user.source === 'Admin' && user.id == <?php echo $user_id; ?>)">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customer Tracking Tab -->
+        <div x-show="activeTab === 'customer_tracking'" x-cloak>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Customer Tracking</h2>
+                    <p class="text-slate-500 text-sm italic">Loyal grill enthusiasts and their account details.</p>
+                </div>
+                <button @click="fetchAllUsers()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 shadow-sm transition-all text-slate-600">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Customer Name</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Contact Info</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="user in allUsers.filter(u => u.role === 'Customer')" :key="'cust' + user.id">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4">
+                                    <div class="font-bold text-slate-800" x-text="`${user.fname} ${user.lname}`"></div>
+                                    <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+                                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                                        Registered Member
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="text-sm font-medium text-[#006738]" x-text="user.email"></div>
+                                    <div class="text-[10px] text-slate-400" x-text="user.mobile || 'No mobile saved'"></div>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <button @click="deleteUser(user.id, 'Customer')" 
+                                            class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-if="allUsers.filter(u => u.role === 'Customer').length === 0">
+                            <tr>
+                                <td colspan="3" class="p-12 text-center text-slate-400 italic">No customers registered yet.</td>
                             </tr>
                         </template>
                     </tbody>
