@@ -207,42 +207,42 @@
                     <!-- Must Try -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-1.png" alt="Must Try" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Must Try</p>
                         </div>
                     </div>
                     <!-- Fiesta Group Meals -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1599307767316-776533da941c?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-2.png" alt="Fiesta Group Meals" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1599307767316-776533da941c?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Fiesta Group Meals</p>
                         </div>
                     </div>
                     <!-- Chicken Inasal -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1532009324734-24a7a5b17b2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-3.png" alt="Chicken Inasal" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1532009324734-24a7a5b17b2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Chicken Inasal</p>
                         </div>
                     </div>
                     <!-- Halo-Halo -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://cdn.pixabay.com/photo/2016/03/27/17/23/ice-cream-1283188_1280.jpg" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-4.png" alt="Halo-Halo" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://cdn.pixabay.com/photo/2016/03/27/17/23/ice-cream-1283188_1280.jpg'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Halo-Halo</p>
                         </div>
                     </div>
                     <!-- Palabok -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1512058560550-42749359a767?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-5.png" alt="Palabok" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1512058560550-42749359a767?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Palabok</p>
                         </div>
                     </div>
                     <!-- Grilled Pork -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1544148103-0773bf10d330?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="individual-6.png" alt="Grilled Pork" class="w-full aspect-square object-contain rounded-2xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1544148103-0773bf10d330?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Grilled Pork</p>
                         </div>
                     </div>
