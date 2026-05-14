@@ -68,13 +68,13 @@ $user_id = $_SESSION['user_id'];
         { title: 'Family Fiesta', subtitle: 'SHARE THE GRILL', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=2000&auto=format&fit=crop', color: '#006738' }
     ],
     categories: [
-        { name: 'Must Try!', icon: 'star', db: 'Chicken' },
-        { name: 'Chicken Inasal', icon: 'flame', db: 'Chicken' },
-        { name: 'Pork BBQ', icon: 'drumstick', db: 'Pork' },
-        { name: 'Family Fiesta', icon: 'users', db: 'Family Fiesta' },
-        { name: 'Buddy Fiesta', icon: 'user-2', db: 'Buddy Fiesta' },
-        { name: 'Halo-Halo', icon: 'ice-cream', db: 'Dessert' },
-        { name: 'Palabok', icon: 'soup', db: 'Palabok' }
+        { name: 'Must Try!', icon: 'star', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400&auto=format&fit=crop', db: 'Chicken' },
+        { name: 'Chicken Inasal', icon: 'flame', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=400&auto=format&fit=crop', db: 'Chicken' },
+        { name: 'Pork BBQ', icon: 'drumstick', image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330?q=80&w=400&auto=format&fit=crop', db: 'Pork' },
+        { name: 'Family Fiesta', icon: 'users', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&auto=format&fit=crop', db: 'Family Fiesta' },
+        { name: 'Buddy Fiesta', icon: 'user-2', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&auto=format&fit=crop', db: 'Buddy Fiesta' },
+        { name: 'Halo-Halo', icon: 'ice-cream', image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=400&auto=format&fit=crop', db: 'Dessert' },
+        { name: 'Palabok', icon: 'soup', image: 'https://images.unsplash.com/photo-1512058560550-42749359a767?q=80&w=400&auto=format&fit=crop', db: 'Palabok' }
     ],
     selectedCategory: 'Chicken Inasal',
     searchQuery: '',
@@ -1009,8 +1009,13 @@ $user_id = $_SESSION['user_id'];
                     <template x-for="cat in categories" :key="cat.name">
                         <div class="flex flex-col items-center gap-4 group cursor-pointer flex-shrink-0" @click="selectedCategory = cat.name; activeTab = 'order_now'">
                             <div :class="selectedCategory === cat.name ? 'bg-[#006738] text-white scale-110 shadow-xl shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100 hover:border-green-100'"
-                                 class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300">
-                                <i :data-lucide="cat.icon" class="w-10 h-10"></i>
+                                 class="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden p-2">
+                                <template x-if="cat.image">
+                                    <img :src="cat.image" :alt="cat.name" class="w-full h-full object-contain" onerror="this.parentElement.innerHTML = '<i data-lucide=\'' + this.getAttribute('data-icon') + '\' class=\'w-10 h-10\'></i>'" :data-icon="cat.icon">
+                                </template>
+                                <template x-if="!cat.image">
+                                    <i :data-lucide="cat.icon" class="w-10 h-10"></i>
+                                </template>
                             </div>
                             <span :class="selectedCategory === cat.name ? 'text-[#006738] font-black' : 'text-slate-500 font-bold'"
                                   class="text-xs transition-colors" x-text="cat.name"></span>
