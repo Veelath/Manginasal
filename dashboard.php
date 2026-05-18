@@ -85,6 +85,16 @@ $user_id = $_SESSION['user_id'];
     showRiderModal: false,
     showProfileModal: false,
     showAddressModal: false,
+    showEditBranchModal: false,
+    showEditMenuModal: false,
+    showEditStaffModal: false,
+    showEditRiderModal: false,
+    showEditManagerModal: false,
+    editingBranch: null,
+    editingMenu: null,
+    editingStaff: null,
+    editingRider: null,
+    editingManager: null,
     tempProfile: { fname: '', lname: '', mobile: '' },
     newAddress: { label: 'Home', province: 'Metro Manila', city: '', brgy: '', street: '', unit: '', building: '', landmark: '', postal: '' },
     message: null,
@@ -97,6 +107,11 @@ $user_id = $_SESSION['user_id'];
         this.showRiderModal = false;
         this.showProfileModal = false;
         this.showAddressModal = false;
+        this.showEditBranchModal = false;
+        this.showEditMenuModal = false;
+        this.showEditStaffModal = false;
+        this.showEditRiderModal = false;
+        this.showEditManagerModal = false;
     },
 
     init() {
@@ -113,6 +128,12 @@ $user_id = $_SESSION['user_id'];
             this.fetchRiders();
             this.fetchAllUsers();
             this.fetchReports();
+
+            // Real-time stats update
+            setInterval(() => {
+                this.fetchStats();
+                this.fetchReports();
+            }, 10000); // 10 seconds for admin
         }
         if(this.role === 'Branch Manager' || this.role === 'Kitchen Staff') {
             this.fetchBranchMenu();
@@ -123,6 +144,12 @@ $user_id = $_SESSION['user_id'];
             if (this.role === 'Kitchen Staff') {
                 this.activeTab = 'orders';
             }
+
+            // Real-time stats update for branch
+            setInterval(() => {
+                this.fetchBranchStats();
+                this.fetchOrders();
+            }, 10000); // 10 seconds
         }
         if(this.role === 'Customer') {
             this.fetchCustomerBranches();
@@ -132,9 +159,18 @@ $user_id = $_SESSION['user_id'];
                 this.activeTab = 'order_now';
             }
             this.showBranchPicker = !this.selectedBranch;
+
+            // Real-time update for customer orders
+            setInterval(() => {
+                this.fetchCustomerOrders();
+            }, 15000);
         }
         if(this.role === 'Driver') {
             this.fetchRiderDeliveries();
+            // Real-time update for driver
+            setInterval(() => {
+                this.fetchRiderDeliveries();
+            }, 10000);
         }
     },
 
@@ -662,6 +698,79 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    openEditBranch(branch) { this.editingBranch = { ...branch }; this.showEditBranchModal = true; },
+    async submitEditBranch() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_branch', ...this.editingBranch })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchBranches();
+            this.showEditBranchModal = false;
+        }
+    },
+
+    openEditMenu(item) { this.editingMenu = { ...item }; this.showEditMenuModal = true; },
+    async submitEditMenu() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_menu', ...this.editingMenu })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchMenu();
+            this.showEditMenuModal = false;
+        }
+    },
+
+    openEditManager(manager) { this.editingManager = { ...manager }; this.showEditManagerModal = true; },
+    async submitEditManager() {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_manager', ...this.editingManager })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchManagers();
+            this.fetchBranches();
+            this.showEditManagerModal = false;
+        }
+    },
+
+    openEditStaff(staff) { this.editingStaff = { ...staff }; this.showEditStaffModal = true; },
+    async submitEditStaff() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_staff', ...this.editingStaff })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchWorkforce();
+            this.fetchStaff();
+            this.showEditStaffModal = false;
+        }
+    },
+
+    openEditRider(rider) { this.editingRider = { ...rider }; this.showEditRiderModal = true; },
+    async submitEditRider() {
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_rider', ...this.editingRider })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchWorkforce();
+            this.fetchRiders();
+            this.showEditRiderModal = false;
+        }
+    },
+
     async submitStaff() {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
@@ -864,7 +973,7 @@ $user_id = $_SESSION['user_id'];
                         <?php elseif (in_array($role, ['Branch Manager', 'Kitchen Staff'])): ?>
                             <div class="flex items-center gap-2 text-slate-500">
                                 <i data-lucide="map-pin" class="w-3 h-3"></i>
-                                <span class="text-sm font-bold" x-text="currentBranch ? currentBranch.Brnch_Name : 'Assigning Branch...'"></span>
+                                <span class="text-sm font-bold" x-text="currentBranch ? currentBranch.Brnch_Name : 'Branch'"></span>
                             </div>
                         <?php else: ?>
                             <p class="text-slate-500">Welcome back, we're ready to grill!</p>
@@ -886,18 +995,6 @@ $user_id = $_SESSION['user_id'];
                     </div>
                 </div>
                 <?php endif; ?>
-
-                <template x-if="currentBranch && activeTab === 'overview'">
-                    <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-2xl shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div class="w-8 h-8 bg-green-50 text-[#006738] rounded-lg flex items-center justify-center">
-                            <i data-lucide="map-pin" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Assigned Branch</p>
-                            <p class="text-xs font-bold text-slate-700" x-text="currentBranch.Brnch_Name + ' - ' + currentBranch.Brnch_City"></p>
-                        </div>
-                    </div>
-                </template>
             </div>
             <div class="flex items-center gap-4">
                 <button class="p-2 bg-white rounded-xl shadow-sm border text-slate-400 hover:text-[#006738]">
@@ -1164,6 +1261,9 @@ $user_id = $_SESSION['user_id'];
                                 <span :class="branch.Brnch_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full">
                                     <span x-text="branch.Brnch_Status === 'Y' ? 'Active' : 'Closed'"></span>
                                 </span>
+                                <button @click="openEditBranch(branch)" class="p-2 text-slate-400 hover:text-[#006738] hover:bg-green-50 rounded-lg transition-all">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
                                 <button @click="deleteBranch(branch.Brnch_ID)" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
@@ -1210,7 +1310,10 @@ $user_id = $_SESSION['user_id'];
                                     <td class="p-4">
                                         <span :class="manager.Brnch_Name ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="manager.Brnch_Name || 'Unassigned'"></span>
                                     </td>
-                                    <td class="p-4 text-right">
+                                    <td class="p-4 text-right flex items-center justify-end gap-2">
+                                        <button @click="openEditManager(manager)" class="text-slate-400 hover:text-[#006738] p-2 transition-colors">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </button>
                                         <button @click="deleteManager(manager.id)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
@@ -1272,7 +1375,10 @@ $user_id = $_SESSION['user_id'];
                                         <div x-show="open" @click.away="open = false" 
                                              class="absolute right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[999] py-2 w-48 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right"
                                              x-transition x-cloak>
-                                            <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Update Account Status</div>
+                                            <div class="px-4 py-2 mb-1 text-[10px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">Manage Account</div>
+                                            <button @click="openEditManager(manager); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-blue-50 text-blue-600 flex items-center gap-3 transition-colors">
+                                                <i data-lucide="user-cog" class="w-4 h-4"></i> Edit Details
+                                            </button>
                                             <button @click="updateManagerStatus(manager.id, 'Active'); open = false" class="w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 text-green-600 flex items-center gap-3 transition-colors">
                                                 <div class="w-2 h-2 rounded-full bg-green-500"></div> Set as Active
                                             </button>
@@ -1336,8 +1442,11 @@ $user_id = $_SESSION['user_id'];
                                     </div>
                                     <span x-show="!staff.Mgr_FName" class="text-xs text-slate-400 italic">No Manager</span>
                                 </td>
-                                <td class="p-4">
+                                <td class="p-4 flex items-center justify-end gap-2">
                                     <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700" x-text="staff.status"></span>
+                                    <button @click="openEditStaff(staff)" class="text-slate-400 hover:text-[#006738] p-2 transition-colors">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
                                 </td>
                             </tr>
                         </template>
@@ -1377,8 +1486,11 @@ $user_id = $_SESSION['user_id'];
                                 <td class="p-4">
                                     <span class="bg-yellow-100 text-yellow-700 text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.Brnch_Name"></span>
                                 </td>
-                                <td class="p-4">
+                                <td class="p-4 flex items-center justify-end gap-2">
                                     <span :class="rider.status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="rider.status === 'Y' ? 'Available' : 'Busy'"></span>
+                                    <button @click="openEditRider(rider)" class="text-slate-400 hover:text-[#006738] p-2 transition-colors">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
                                 </td>
                             </tr>
                         </template>
@@ -1614,7 +1726,10 @@ $user_id = $_SESSION['user_id'];
                                         <span x-text="item.Menu_Status === 'Y' ? 'Active' : 'Unavailable'"></span>
                                     </button>
                                 </td>
-                                <td class="p-4 text-right">
+                                <td class="p-4 text-right flex justify-end gap-2">
+                                    <button @click="openEditMenu(item)" class="p-2 text-slate-400 hover:text-[#006738] hover:bg-green-50 rounded-lg transition-all">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
                                     <button @click="deleteMenu(item.Menu_ID)" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
@@ -2569,6 +2684,165 @@ $user_id = $_SESSION['user_id'];
 
         <?php endif; ?>
 
+        <!-- Edit Branch Modal -->
+        <div x-show="showEditBranchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditBranchModal = false">
+                <div class="bg-[#006738] p-6 text-white flex justify-between items-center">
+                    <h3 class="text-xl font-black font-poppins">Edit Branch</h3>
+                    <button @click="showEditBranchModal = false" class="hover:rotate-90 transition-transform">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4" x-if="editingBranch">
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Branch Name</label>
+                        <input type="text" x-model="editingBranch.Brnch_Name" class="w-full p-3 rounded-xl border-slate-200 focus:ring-[#006738] focus:border-[#006738] font-bold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">City</label>
+                            <input type="text" x-model="editingBranch.Brnch_City" class="w-full p-3 rounded-xl border-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Province</label>
+                            <input type="text" x-model="editingBranch.Brnch_Province" class="w-full p-3 rounded-xl border-slate-200">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Delivery Radius (km)</label>
+                        <input type="number" step="0.1" x-model="editingBranch.Brnch_Radius" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <button @click="submitEditBranch" class="w-full bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all">
+                        Update Branch
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Menu Modal -->
+        <div x-show="showEditMenuModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditMenuModal = false">
+                <div class="bg-[#006738] p-6 text-white flex justify-between items-center">
+                    <h3 class="text-xl font-black font-poppins">Edit Global Item</h3>
+                    <button @click="showEditMenuModal = false" class="hover:rotate-90 transition-transform">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4" x-if="editingMenu">
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Product Name</label>
+                        <input type="text" x-model="editingMenu.Menu_Name" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Category</label>
+                        <select x-model="editingMenu.Menu_Category" class="w-full p-3 rounded-xl border-slate-200">
+                            <template x-for="cat in Array.from(new Set(categories.map(c => c.db)))">
+                                <option :value="cat" x-text="cat"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Price (₱)</label>
+                            <input type="number" x-model="editingMenu.Menu_Price" class="w-full p-3 rounded-xl border-slate-200 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Serving Size</label>
+                            <input type="text" x-model="editingMenu.Menu_Size" class="w-full p-3 rounded-xl border-slate-200">
+                        </div>
+                    </div>
+                    <button @click="submitEditMenu" class="w-full bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all">
+                        Update Global Menu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Manager Modal -->
+        <div x-show="showEditManagerModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditManagerModal = false">
+                <div class="bg-[#ffec00] p-6 text-black flex justify-between items-center">
+                    <h3 class="text-xl font-black font-poppins">Edit Manager</h3>
+                    <button @click="showEditManagerModal = false" class="hover:rotate-90 transition-transform">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4" x-if="editingManager">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">First Name</label>
+                            <input type="text" x-model="editingManager.fname" class="w-full p-3 rounded-xl border-slate-200 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Last Name</label>
+                            <input type="text" x-model="editingManager.lname" class="w-full p-3 rounded-xl border-slate-200 font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Email Address</label>
+                        <input type="email" x-model="editingManager.email" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Mobile Number</label>
+                        <input type="text" x-model="editingManager.mobile" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Assign to Branch</label>
+                        <select x-model="editingManager.Mgr_Brnch_ID" class="w-full p-3 rounded-xl border-slate-200 font-bold">
+                            <option value="">Select Branch</option>
+                            <template x-for="branch in branches">
+                                <option :value="branch.Brnch_ID" x-text="branch.Brnch_Name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <button @click="submitEditManager" class="w-full bg-black text-white py-4 rounded-2xl font-black shadow-lg hover:bg-slate-800 transition-all">
+                        Update Manager
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Staff Modal -->
+        <div x-show="showEditStaffModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditStaffModal = false">
+                <div class="bg-[#006738] p-6 text-white">
+                    <h3 class="text-xl font-black font-poppins">Edit Staff Member</h3>
+                </div>
+                <div class="p-6 space-y-4" x-if="editingStaff">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" x-model="editingStaff.fname" placeholder="First Name" class="w-full p-3 rounded-xl border-slate-200">
+                        <input type="text" x-model="editingStaff.lname" placeholder="Last Name" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <input type="email" x-model="editingStaff.email" placeholder="Email Address" class="w-full p-3 rounded-xl border-slate-200">
+                    <input type="text" x-model="editingStaff.mobile" placeholder="Mobile" class="w-full p-3 rounded-xl border-slate-200">
+                    <select x-model="editingStaff.role" class="w-full p-3 rounded-xl border-slate-200">
+                        <option value="Kitchen Staff">Kitchen Staff</option>
+                        <option value="Front Counter">Front Counter</option>
+                        <option value="Supervisor">Supervisor</option>
+                    </select>
+                    <button @click="submitEditStaff" class="w-full bg-[#006738] text-white py-3 rounded-xl font-bold">Update Staff</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Rider Modal -->
+        <div x-show="showEditRiderModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditRiderModal = false">
+                <div class="bg-black p-6 text-white text-center">
+                    <h3 class="text-xl font-black font-poppins">Edit Rider Account</h3>
+                </div>
+                <div class="p-6 space-y-4" x-if="editingRider">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" x-model="editingRider.fname" placeholder="First Name" class="w-full p-3 rounded-xl border-slate-200">
+                        <input type="text" x-model="editingRider.lname" placeholder="Last Name" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <input type="email" x-model="editingRider.email" placeholder="Email Address" class="w-full p-3 rounded-xl border-slate-200">
+                    <input type="text" x-model="editingRider.mobile" placeholder="Mobile" class="w-full p-3 rounded-xl border-slate-200">
+                    <button @click="submitEditRider" class="w-full bg-[#ffec00] text-black py-3 rounded-xl font-bold">Update Rider Details</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Branch Manager Modals -->
         <?php if ($role === 'Branch Manager' || $role === 'System Admin'): ?>
         <div x-show="showStaffModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
@@ -2789,42 +3063,43 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="bg-[#006738] -mx-4 sm:-mx-6 lg:-mx-8 mt-12 pt-12 pb-8">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-4">
-                    <!-- Footer Links -->
-                    <nav class="flex flex-wrap items-center gap-x-6 gap-y-3 font-black uppercase tracking-widest text-[10px] sm:text-xs">
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">About Us</a>
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">FAQs</a>
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Contact Us</a>
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Corporate Information</a>
-                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
-                    </nav>
-                    <!-- Store Badges in Footer -->
-                    <div class="flex items-center shrink-0">
-                        <img src="socials2.png" class="h-9 sm:h-10 cursor-pointer hover:scale-105 transition-transform" alt="Google Play and App Store">
-                    </div>
-                </div>
+    </main>
 
-                <div class="mt-4 mb-8">
-                    <p class="text-white text-[11px] font-medium opacity-90">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
-                </div>
-                
-                <!-- White Line separator -->
-                <div class="h-px bg-white/20 w-full mb-8"></div>
-
-                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
-                    <!-- Social Icons matching screenshot style -->
-                    <div class="flex items-center">
-                        <img src="socials.png" class="h-10 w-auto cursor-pointer" alt="Social Media Links">
-                    </div>
+    <!-- Footer moved outside main for proper bottom placement -->
+    <footer :class="sidebarOpen ? 'md:ml-64' : 'md:ml-20'" class="transition-all duration-300 bg-[#006738] pt-12 pb-8 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-4">
+                <!-- Footer Links -->
+                <nav class="flex flex-wrap items-center gap-x-6 gap-y-3 font-poppins font-black uppercase tracking-widest text-[10px] sm:text-xs">
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">About Us</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">FAQs</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Contact Us</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Corporate Information</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
+                </nav>
+                <!-- Store Badges in Footer -->
+                <div class="flex items-center shrink-0">
+                    <img src="socials2.png" class="h-9 sm:h-10 cursor-pointer hover:scale-105 transition-transform" alt="Google Play and App Store">
                 </div>
             </div>
-        </footer>
-    </main>
+
+            <div class="mt-4 mb-8">
+                <p class="text-white text-[11px] font-medium opacity-90 font-poppins">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+            </div>
+            
+            <!-- White Line separator -->
+            <div class="h-px bg-white/20 w-full mb-8"></div>
+
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <p class="text-white text-[11px] sm:text-xs font-medium font-poppins">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
+                <!-- Social Icons matching screenshot style -->
+                <div class="flex items-center">
+                    <img src="socials.png" class="h-10 w-auto cursor-pointer" alt="Social Media Links">
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script>
         lucide.createIcons();

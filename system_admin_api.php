@@ -71,6 +71,62 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Manager account created!']);
     }
+    elseif ($action === 'update_branch') {
+        $id = $data['Brnch_ID'] ?? null;
+        $name = $data['Brnch_Name'] ?? '';
+        $street = $data['Brnch_Street'] ?? '';
+        $brgy = $data['Brnch_Brgy'] ?? '';
+        $city = $data['Brnch_City'] ?? '';
+        $province = $data['Brnch_Province'] ?? '';
+        $radius = $data['Brnch_Radius'] ?? 5.00;
+
+        if (!$id || empty($name) || empty($city)) {
+            echo json_encode(['success' => false, 'message' => 'ID, name, and city are required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE BRANCH SET Brnch_Name = ?, Brnch_Street = ?, Brnch_Brgy = ?, Brnch_City = ?, Brnch_Province = ?, Brnch_Radius = ? WHERE Brnch_ID = ?");
+        $stmt->execute([$name, $street, $brgy, $city, $province, $radius, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Branch updated successfully!']);
+    }
+    elseif ($action === 'update_menu') {
+        $id = $data['Menu_ID'] ?? null;
+        $name = $data['Menu_Name'] ?? '';
+        $desc = $data['Menu_Description'] ?? '';
+        $price = $data['Menu_Price'] ?? 0;
+        $cat = $data['Menu_Category'] ?? '';
+        $size = $data['Menu_Size'] ?? 'Standard';
+        $image = $data['Menu_Image'] ?? '';
+
+        if (!$id || empty($name) || empty($cat)) {
+            echo json_encode(['success' => false, 'message' => 'ID, name, and category required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Name = ?, Menu_Description = ?, Menu_Price = ?, Menu_Category = ?, Menu_Size = ?, Menu_Image = ? WHERE Menu_ID = ?");
+        $stmt->execute([$name, $desc, $price, $cat, $size, $image, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Menu item updated!']);
+    }
+    elseif ($action === 'update_manager') {
+        $id = $data['id'] ?? null;
+        $fname = $data['fname'] ?? '';
+        $lname = $data['lname'] ?? '';
+        $email = $data['email'] ?? '';
+        $mobile = $data['mobile'] ?? '';
+        $branch_id = $data['Mgr_Brnch_ID'] ?? null;
+
+        if (!$id || empty($fname) || empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'ID, name, and email are required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE BRANCH_MANAGER SET Mgr_FName = ?, Mgr_LName = ?, Mgr_Email = ?, Mgr_MobileNum = ?, Mgr_Brnch_ID = ? WHERE Mgr_ID = ?");
+        $stmt->execute([$fname, $lname, $email, $mobile, $branch_id, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Manager updated successfully!']);
+    }
     elseif ($action === 'update_manager_status') {
         $id = $data['id'] ?? null;
         $status = $data['status'] ?? '';
