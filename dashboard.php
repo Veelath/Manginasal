@@ -123,6 +123,7 @@ $user_id = $_SESSION['user_id'];
     },
 
     init() {
+        this.fetchProfile();
         this.$watch('selectedCategory', () => this.$nextTick(() => lucide.createIcons()));
         this.$watch('currentCarousel', () => this.$nextTick(() => lucide.createIcons()));
         this.$watch('activeTab', () => this.$nextTick(() => lucide.createIcons()));
@@ -164,7 +165,6 @@ $user_id = $_SESSION['user_id'];
         if(this.role === 'Customer') {
             this.fetchCustomerBranches();
             this.fetchCustomerOrders();
-            this.fetchProfile();
             if (!this.selectedBranch) {
                 this.activeTab = 'order_now';
             }
@@ -2905,8 +2905,8 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <?php if ($role === 'Customer'): ?>
-        <!-- Customer Modals -->
+        <?php if ($role !== 'Customer'): ?>
+        <!-- Administrative Modals -->
         <div x-show="showEditBranchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditBranchModal = false">
                 <div class="bg-[#006738] p-6 text-white flex justify-between items-center">
@@ -3141,8 +3141,10 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </div>
         </div>
+        <?php endif; ?>
+        <?php endif; ?>
 
-        <!-- Edit Profile Modal -->
+        <!-- Universal Profile Modal -->
         <div x-show="showProfileModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showProfileModal = false">
                 <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
@@ -3169,6 +3171,7 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <?php if ($role === 'Customer'): ?>
         <!-- Add Address Modal -->
         <div x-show="showAddressModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden" @click.away="showAddressModal = false">
