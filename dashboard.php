@@ -446,8 +446,7 @@ $user_id = $_SESSION['user_id'];
         });
         const data = await res.json();
         if(data.success) {
-            this.stats.staff = data.stats.staff;
-            this.stats.riders = data.stats.riders;
+            this.stats = { ...this.stats, ...data.stats };
         }
     },
 
@@ -751,6 +750,7 @@ $user_id = $_SESSION['user_id'];
         this.message = { success: data.success, text: data.message };
         if(data.success) {
             this.fetchWorkforce();
+            this.fetchBranchStats();
             this.fetchStaff();
             this.showEditStaffModal = false;
         }
@@ -766,6 +766,7 @@ $user_id = $_SESSION['user_id'];
         this.message = { success: data.success, text: data.message };
         if(data.success) {
             this.fetchWorkforce();
+            this.fetchBranchStats();
             this.fetchRiders();
             this.showEditRiderModal = false;
         }
@@ -1054,7 +1055,7 @@ $user_id = $_SESSION['user_id'];
                         <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
                             <i data-lucide="bike" class="w-7 h-7 font-bold"></i>
                         </div>
-                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Rider Fleet</h3>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Delivery Riders</h3>
                         <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
                     </div>
                     <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden col-span-1 lg:col-span-2">
@@ -1458,7 +1459,7 @@ $user_id = $_SESSION['user_id'];
         <div x-show="activeTab === 'manage_riders'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-800 font-poppins">Rider Fleet (Global)</h2>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins">Delivery Riders (Global)</h2>
                     <p class="text-slate-500 text-sm italic">Tracking all delivery riders across the network.</p>
                 </div>
                 <button @click="fetchRiders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
@@ -1931,7 +1932,10 @@ $user_id = $_SESSION['user_id'];
                                         'bg-orange-100 text-orange-700': person.role === 'Driver' || person.role === 'Rider'
                                     }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="person.role"></span>
                                 </td>
-                                <td class="p-4 text-right">
+                                <td class="p-4 text-right flex items-center justify-end gap-2">
+                                    <button @click="person.source === 'Staff' ? openEditStaff(person) : openEditRider(person)" class="text-slate-400 hover:text-[#006738] p-2 transition-colors">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
                                     <button @click="deletePerson(person.id, person.source)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>

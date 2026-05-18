@@ -88,7 +88,7 @@ try {
         $workforce = [];
         
         // Staff
-        $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_Role as role, 'Staff' as source FROM STAFF WHERE Staff_Brnch_ID = ?");
+        $stmt = $pdo->prepare("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_MobileNum as mobile, Staff_Role as role, 'Staff' as source FROM STAFF WHERE Staff_Brnch_ID = ?");
         $stmt->execute([$branch_id]);
         $workforce = array_merge($workforce, $stmt->fetchAll());
         
@@ -96,7 +96,7 @@ try {
         $stmt = $pdo->prepare("
             SELECT 
                 r.Rider_ID as id, r.Rider_FName as fname, r.Rider_LName as lname, 
-                r.Rider_Email as email, 'Driver' as role, 'Rider' as source, 
+                r.Rider_Email as email, r.Rider_MobileNum as mobile, 'Driver' as role, 'Rider' as source, 
                 r.Rider_Status as status,
                 (SELECT COUNT(*) FROM orders o 
                  JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID 
