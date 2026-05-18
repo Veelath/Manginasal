@@ -106,6 +106,9 @@ $user_id = $_SESSION['user_id'];
     selectedAddressId: null,
     etaInput: '',
     editEtaOrderId: null,
+    riderHistory: [],
+    kitchenSubTab: 'active',
+    riderSubTab: 'active',
 
     closeAllModals() {
         this.showBranchModal = false;
@@ -177,6 +180,7 @@ $user_id = $_SESSION['user_id'];
         }
         if(this.role === 'Driver') {
             this.fetchRiderDeliveries();
+            this.fetchRiderHistory();
             // Real-time update for driver
             setInterval(() => {
                 this.fetchRiderDeliveries();
@@ -420,6 +424,18 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    async fetchRiderHistory() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_rider_history' })
+        });
+        const data = await res.json();
+        if(data.success) {
+            this.riderHistory = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
     async updateEta() {
         if(!this.editEtaOrderId || !this.etaInput) return;
         const res = await fetch('orders_api.php', {
@@ -442,7 +458,10 @@ $user_id = $_SESSION['user_id'];
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
-        if(data.success) this.fetchRiderDeliveries();
+        if(data.success) {
+            this.fetchRiderDeliveries();
+            this.fetchRiderHistory();
+        }
     },
 
     async fetchOrders() {
@@ -2033,13 +2052,40 @@ $user_id = $_SESSION['user_id'];
                     <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Order Management</h2>
                     <p class="text-slate-500 text-sm">Monitor and dispatch orders for your branch.</p>
                 </div>
-                <button @click="fetchOrders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                </button>
+                <div class="flex items-center gap-3">
+                    <div class="flex bg-slate-100 p-1 rounded-xl">
+                        <button @click="kitchenSubTab = 'active'" :class="kitchenSubTab === 'active' ? 'bg-white shadow-sm text-[#006738]' : 'text-slate-500'" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all">Active</button>
+                        <button @click="kitchenSubTab = 'history'" :class="kitchenSubTab === 'history' ? 'bg-white shadow-sm text-[#006738]' : 'text-slate-500'" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all">History</button>
+                    </div>
+                    <button @click="fetchOrders()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="space-y-4">
-                <template x-if="orders.length === 0">
+            <!-- Kitchen Stats Card -->
+            <div x-show="kitchenSubTab === 'active'" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-5 rounded-[2rem] border-2 border-slate-50 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">New Orders</p>
+                    <p class="text-2xl font-black text-orange-500" x-text="orders.filter(o => o.Order_Stat === 'Pending').length"></p>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] border-2 border-slate-50 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Preparing</p>
+                    <p class="text-2xl font-black text-blue-500" x-text="orders.filter(o => o.Order_Stat === 'Preparing').length"></p>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] border-2 border-slate-50 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Ready/Pending Dispatch</p>
+                    <p class="text-2xl font-black text-purple-500" x-text="orders.filter(o => o.Order_Stat === 'Ready').length"></p>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] border-2 border-slate-50 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">In Delivery</p>
+                    <p class="text-2xl font-black text-green-500" x-text="orders.filter(o => o.Order_Stat === 'Delivering').length"></p>
+                </div>
+            </div>
+
+            <!-- Active Orders List -->
+            <div x-show="kitchenSubTab === 'active'" class="space-y-4">
+                <template x-if="orders.filter(o => o.Order_Stat !== 'Completed' && o.Order_Stat !== 'Cancelled').length === 0">
                     <div class="bg-white border-2 border-dashed border-slate-100 rounded-[2rem] p-12 text-center">
                         <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
                             <i data-lucide="clipboard-x" class="w-10 h-10"></i>
@@ -2048,9 +2094,10 @@ $user_id = $_SESSION['user_id'];
                         <p class="text-slate-400 text-sm italic">New orders from customers will appear here.</p>
                     </div>
                 </template>
-                <template x-for="order in orders" :key="order.Order_ID">
+                <template x-for="order in orders.filter(o => o.Order_Stat !== 'Completed' && o.Order_Stat !== 'Cancelled')" :key="order.Order_ID">
                     <div class="bg-white border-2 border-slate-50 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
                         <div class="flex flex-wrap justify-between items-start gap-4">
+                            <!-- ... existing order card content ... -->
                             <div class="flex gap-4">
                                 <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#006738] shadow-inner">
                                     <i data-lucide="package" class="w-7 h-7"></i>
@@ -2144,6 +2191,73 @@ $user_id = $_SESSION['user_id'];
                     </div>
                 </template>
             </div>
+
+            <!-- Kitchen Order History -->
+            <div x-show="kitchenSubTab === 'history'" class="space-y-4">
+                <template x-if="orders.filter(o => o.Order_Stat === 'Completed').length === 0">
+                    <div class="bg-white border-2 border-dashed border-slate-100 rounded-[2rem] p-12 text-center">
+                        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                            <i data-lucide="history" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-slate-400 uppercase tracking-widest">No History Yet</h3>
+                    </div>
+                </template>
+                <div class="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Order</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Customer</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Date/Time</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Method</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Amount</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <template x-for="order in orders.filter(o => o.Order_Stat === 'Completed')" :key="order.Order_ID">
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <p class="font-black text-slate-800" x-text="order.Order_Code"></p>
+                                        <p class="text-[10px] text-slate-400" x-text="order.Order_Type"></p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="font-bold text-slate-700 text-sm" x-text="`${order.Cust_FName} ${order.Cust_LName}`"></p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-xs text-slate-600" x-text="new Date(order.Order_Date).toLocaleString()"></p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="text-[10px] font-black text-[#006738] bg-green-50 px-2 py-1 rounded" x-text="order.Pay_Method"></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="font-black text-slate-800" x-text="'₱' + parseFloat(order.Order_Total_Amount).toFixed(0)"></p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <button @click="fetchOrderItems(order.Order_ID)" class="p-2 text-[#006738] hover:bg-green-50 rounded-lg">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <template x-if="orderItems[order.Order_ID]">
+                                    <tr class="bg-slate-50/30">
+                                        <td colspan="6" class="px-6 py-4">
+                                            <div class="space-y-1">
+                                                <template x-for="item in orderItems[order.Order_ID]">
+                                                    <div class="text-[10px] flex justify-between max-w-xs">
+                                                        <span x-text="item.OItem_Quantity + 'x ' + item.Menu_Name"></span>
+                                                        <span class="font-bold" x-text="'₱' + parseFloat(item.OItem_Unit_Price).toFixed(0)"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -2179,6 +2293,48 @@ $user_id = $_SESSION['user_id'];
                     </div>
                 </template>
             </div>
+
+            <!-- Rider Delivery History -->
+            <div x-show="riderSubTab === 'history'" class="space-y-4">
+                <template x-if="riderHistory.length === 0">
+                    <div class="py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                        <div class="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="history" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-black text-slate-400 text-lg uppercase">No Delivery History</h3>
+                    </div>
+                </template>
+                <div x-show="riderHistory.length > 0" class="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Order</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Customer</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Address</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Arrived At</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Total</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50 text-sm">
+                                <template x-for="delivery in riderHistory" :key="delivery.Order_ID">
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-black" x-text="delivery.Order_Code"></td>
+                                        <td class="px-6 py-4 font-bold" x-text="`${delivery.Cust_FName} ${delivery.Cust_LName}`"></td>
+                                        <td class="px-6 py-4 text-xs text-slate-500" x-text="`${delivery.Add_Street}, ${delivery.Add_City}`"></td>
+                                        <td class="px-6 py-4 text-xs" x-text="delivery.Dlvry_Arrival_Time ? new Date(delivery.Dlvry_Arrival_Time).toLocaleString() : 'N/A'"></td>
+                                        <td class="px-6 py-4 font-black text-[#006738]" x-text="'₱' + parseFloat(delivery.Order_Total_Amount).toFixed(0)"></td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-green-100 text-green-700 text-[10px] font-black uppercase px-2 py-1 rounded-full">Delivered</span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -2188,14 +2344,36 @@ $user_id = $_SESSION['user_id'];
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">My Deliveries</h2>
-                    <p class="text-slate-500 text-sm">Active routes assigned to you.</p>
+                    <p class="text-slate-500 text-sm">Manage your routes and track history.</p>
                 </div>
-                <button @click="fetchRiderDeliveries()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                </button>
+                <div class="flex items-center gap-3">
+                    <div class="flex bg-slate-100 p-1 rounded-xl">
+                        <button @click="riderSubTab = 'active'" :class="riderSubTab === 'active' ? 'bg-white shadow-sm text-[#006738]' : 'text-slate-500'" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all">Active</button>
+                        <button @click="riderSubTab = 'history'" :class="riderSubTab === 'history' ? 'bg-white shadow-sm text-[#006738]' : 'text-slate-500'" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all">History</button>
+                    </div>
+                    <button @click="fetchRiderDeliveries(); fetchRiderHistory();" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Rider Stats -->
+            <div x-show="riderSubTab === 'active'" class="mb-8">
+                <div class="bg-[#006738] rounded-[2.5rem] p-8 text-white flex justify-between items-center shadow-xl overflow-hidden relative">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black uppercase opacity-60 tracking-widest mb-1">Active Deliveries</p>
+                        <h3 class="text-4xl font-black font-poppins" x-text="riderDeliveries.length"></h3>
+                    </div>
+                    <div class="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm">
+                        <i data-lucide="navigation" class="w-10 h-10"></i>
+                    </div>
+                    <!-- Decorative patterns -->
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+                </div>
+            </div>
+
+            <!-- Active Deliveries -->
+            <div x-show="riderSubTab === 'active'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <template x-for="order in riderDeliveries" :key="order.Order_ID">
                     <div class="bg-white border-2 border-slate-50 rounded-[2rem] p-8 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
                         <div class="absolute top-0 right-0 p-8 opacity-5">

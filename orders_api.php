@@ -322,6 +322,25 @@ try {
         $stmt->execute([$user_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'get_rider_history') {
+        if ($role !== 'Driver') {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+        $stmt = $pdo->prepare("
+            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount, p.Pay_Status, d.Dlvry_Arrival_Time
+            FROM orders o
+            JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
+            JOIN ADDRESS a ON o.Order_Add_ID = a.Add_ID
+            JOIN DELIVERY d ON o.Order_ID = d.Dlvry_Order_ID
+            LEFT JOIN PAYMENT p ON o.Order_ID = p.Pay_Order_ID
+            WHERE d.Dlvry_Rider_ID = ? AND o.Order_Stat = 'Completed'
+            ORDER BY o.Order_ID DESC
+            LIMIT 50
+        ");
+        $stmt->execute([$user_id]);
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+    }
     elseif ($action === 'complete_delivery') {
         if ($role !== 'Driver') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
