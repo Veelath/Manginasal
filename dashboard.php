@@ -90,6 +90,10 @@ $user_id = $_SESSION['user_id'];
     showEditStaffModal: false,
     showEditRiderModal: false,
     showEditManagerModal: false,
+    showCartTray: false,
+    showMenuOptionsModal: false,
+    selectedMenuItemForOptions: null,
+    menuOptions: { size: 'Small', addonPrice: 0 },
     editingBranch: null,
     editingMenu: null,
     editingStaff: null,
@@ -118,6 +122,8 @@ $user_id = $_SESSION['user_id'];
         this.$watch('selectedCategory', () => this.$nextTick(() => lucide.createIcons()));
         this.$watch('currentCarousel', () => this.$nextTick(() => lucide.createIcons()));
         this.$watch('activeTab', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('showCartTray', () => this.$nextTick(() => lucide.createIcons()));
+        this.$watch('showMenuOptionsModal', () => this.$nextTick(() => lucide.createIcons()));
         
         if(this.role === 'System Admin') {
             this.fetchBranches();
@@ -270,11 +276,45 @@ $user_id = $_SESSION['user_id'];
     },
 
     addToCart(item) {
-        const existing = this.cart.find(i => i.Menu_ID === item.Menu_ID);
+        // Simple logic for categories that need options
+        const needsOptions = item.Menu_Category === 'Dessert' || item.Menu_Name.toLowerCase().includes('drink') || item.Menu_Name.toLowerCase().includes('halo');
+        
+        if (needsOptions && !this.selectedMenuItemForOptions) {
+            this.selectedMenuItemForOptions = { ...item };
+            this.menuOptions = { size: 'Small', addonPrice: 0 };
+            this.showMenuOptionsModal = true;
+            return;
+        }
+
+        const price = parseFloat(item.Menu_Price) + (this.menuOptions?.addonPrice || 0);
+        const name = this.menuOptions?.size ? `${item.Menu_Name} (${this.menuOptions.size})` : item.Menu_Name;
+        
+        // Use a composite key for cart items that have options
+        const cartKey = `${item.Menu_ID}-${this.menuOptions?.size || 'Standard'}`;
+
+        const existing = this.cart.find(i => i.cartKey === cartKey);
         if(existing) {
             existing.qty++;
         } else {
-            this.cart.push({ ...item, qty: 1 });
+            this.cart.push({ 
+                ...item, 
+                Menu_Name: name,
+                Menu_Price: price,
+                qty: 1, 
+                cartKey: cartKey,
+                selectedSize: this.menuOptions?.size || null
+            });
+        }
+        
+        // Reset options
+        this.selectedMenuItemForOptions = null;
+        this.showMenuOptionsModal = false;
+        this.menuOptions = { size: 'Small', addonPrice: 0 };
+    },
+
+    confirmOptions() {
+        if (this.selectedMenuItemForOptions) {
+            this.addToCart(this.selectedMenuItemForOptions);
         }
     },
 
@@ -2279,11 +2319,11 @@ $user_id = $_SESSION['user_id'];
             </div>
 
             <!-- Store Main Split -->
-            <div class="flex flex-col lg:flex-row gap-8">
+            <div>
                 <div class="flex-1">
                     <h3 class="text-xl font-black text-slate-800 font-poppins mb-6 pb-2 border-b-2 border-green-50" x-text="selectedCategory"></h3>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <template x-for="item in customerMenu.filter(i => (!searchQuery || i.Menu_Name.toLowerCase().includes(searchQuery.toLowerCase())) && (i.Menu_Category === (categories.find(c => c.name === selectedCategory)?.db || '') || selectedCategory === 'Must Try!'))" :key="item.Menu_ID">
                             <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden relative">
                                 <!-- Save Badge -->
@@ -2298,9 +2338,6 @@ $user_id = $_SESSION['user_id'];
                                     <template x-if="!item.Menu_Image">
                                         <div class="flex flex-col items-center">
                                             <i data-lucide="utensils" class="w-16 h-16 opacity-5 group-hover:scale-125 transition-transform duration-500"></i>
-                                            <div class="absolute inset-0 flex items-center justify-center p-4">
-                                                <p class="text-[10px] text-slate-300 font-bold italic">Image Placeholder</p>
-                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -2325,129 +2362,216 @@ $user_id = $_SESSION['user_id'];
                         </template>
                     </div>
                 </div>
+            </div>
 
-                <!-- Shopping Tray (Cart) -->
-                <div class="w-full lg:w-96">
-                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-8 sticky top-8">
-                        <div class="flex items-center gap-3 mb-8">
-                            <div class="w-10 h-10 bg-[#ffec00] rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
-                                <i data-lucide="shopping-basket" class="w-5 h-5 text-black"></i>
+            <!-- Floating Cart Button -->
+            <button @click="showCartTray = true" 
+                    x-show="cart.length > 0"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="translate-y-20 opacity-0"
+                    x-transition:enter-end="translate-y-0 opacity-100"
+                    class="fixed bottom-10 right-10 w-20 h-20 bg-[#ffec00] rounded-full shadow-[0_20px_50px_rgba(237,28,36,0.2)] flex items-center justify-center z-50 group hover:scale-110 transition-transform active:scale-95">
+                <i data-lucide="shopping-basket" class="w-8 h-8 text-black"></i>
+                <div class="absolute -top-1 -right-1 bg-[#ed1c24] text-white text-[10px] font-black min-w-[24px] h-[24px] rounded-full flex items-center justify-center px-1 border-2 border-black" x-text="cart.reduce((s, i) => s + i.qty, 0)"></div>
+                <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">VIEW YOUR TRAY</div>
+            </button>
+
+            <!-- Slide-over Cart Tray Overlay -->
+            <div x-show="showCartTray" class="fixed inset-0 z-[60]" x-cloak>
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCartTray = false"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl overflow-hidden flex flex-col"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="translate-x-full"
+                     x-transition:enter-end="translate-x-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="translate-x-0"
+                     x-transition:leave-end="translate-x-full">
+                    
+                    <!-- Cart Header -->
+                    <div class="p-8 border-b border-slate-50 flex items-center justify-between bg-[#f8faf8]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-[#ffec00] rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                                <i data-lucide="shopping-basket" class="w-6 h-6 text-black"></i>
                             </div>
-                            <h3 class="font-black text-xl font-poppins">Your Tray</h3>
+                            <div>
+                                <h3 class="font-black text-2xl font-poppins text-slate-800">Your Tray</h3>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest" x-text="`${cart.length} unique items`"></p>
+                            </div>
                         </div>
+                        <button @click="showCartTray = false" class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-white transition-colors">
+                            <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                        </button>
+                    </div>
 
-                        <div class="space-y-4 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            <template x-for="(item, index) in cart" :key="index">
-                                <div class="group flex gap-4 bg-slate-50/50 p-4 rounded-3xl border border-slate-50 hover:bg-white hover:shadow-md transition-all">
-                                    <div class="w-16 h-16 bg-white rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center text-slate-300">
-                                        <template x-if="item.Menu_Image">
-                                            <img :src="item.Menu_Image" class="w-full h-full object-cover">
-                                        </template>
-                                        <template x-if="!item.Menu_Image">
-                                            <i data-lucide="utensils" class="w-6 h-6 text-slate-300"></i>
-                                        </template>
+                    <!-- Cart Content -->
+                    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
+                        <template x-for="(item, index) in cart" :key="index">
+                            <div class="group flex gap-5 bg-white p-5 rounded-[2rem] border-2 border-slate-50 hover:border-[#ffec00]/30 transition-all shadow-sm">
+                                <div class="w-20 h-20 bg-slate-50 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <template x-if="item.Menu_Image">
+                                        <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!item.Menu_Image">
+                                        <i data-lucide="utensils" class="w-8 h-8 text-slate-200"></i>
+                                    </template>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <p class="text-base font-black text-slate-800 truncate" x-text="item.Menu_Name"></p>
+                                        <button @click="cart.splice(index, 1)" class="text-slate-300 hover:text-red-500 transition-colors">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
                                     </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-black text-slate-800 truncate" x-text="item.Menu_Name"></p>
-                                        <p class="text-[10px] font-black text-[#006738] mb-2" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
-                                        
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center bg-white rounded-lg border border-slate-100 p-1">
-                                                <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500">-</button>
-                                                <span class="w-8 text-center text-xs font-black text-slate-700" x-text="item.qty"></span>
-                                                <button @click="item.qty++" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-green-600">+</button>
-                                            </div>
-                                            <span class="text-sm font-black text-[#006738]" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
+                                    <p class="text-xs font-black text-[#006738] mb-4" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-100">
+                                            <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] transition-all">-</button>
+                                            <span class="w-10 text-center text-sm font-black text-slate-800" x-text="item.qty"></span>
+                                            <button @click="item.qty++" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] transition-all">+</button>
                                         </div>
+                                        <span class="text-lg font-black text-[#006738] drop-shadow-sm" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
                                     </div>
                                 </div>
-                            </template>
-                            <template x-if="cart.length === 0">
-                                <div class="py-12 text-center">
-                                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                                        <i data-lucide="shopping-bag" class="w-8 h-8"></i>
-                                    </div>
-                                    <p class="text-slate-400 italic text-sm">Your tray is empty.</p>
+                            </div>
+                        </template>
+                        <template x-if="cart.length === 0">
+                            <div class="py-20 text-center">
+                                <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                                    <i data-lucide="shopping-bag" class="w-12 h-12"></i>
                                 </div>
-                            </template>
-                        </div>
+                                <p class="text-slate-400 font-black uppercase text-sm tracking-widest">Nothing in here yet</p>
+                                <button @click="showCartTray = false" class="mt-6 text-[#006738] font-black text-xs uppercase underline">Back to Menu</button>
+                            </div>
+                        </template>
+                    </div>
 
-                        <div class="space-y-4 pt-6 border-t border-slate-100">
+                    <!-- Cart Footer -->
+                    <div class="p-8 bg-[#f8faf8] border-t border-slate-100 space-y-6 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
+                        <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-3">
                                 <button @click="orderType = 'Delivery'" 
-                                        :class="orderType === 'Delivery' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'"
-                                        class="py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Delivery</button>
+                                        :class="orderType === 'Delivery' ? 'bg-[#006738] text-white shadow-lg shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100'"
+                                        class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Delivery</button>
                                 <button @click="orderType = 'Take-out'" 
-                                        :class="orderType === 'Take-out' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'"
-                                        class="py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Pickup</button>
+                                        :class="orderType === 'Take-out' ? 'bg-[#006738] text-white shadow-lg shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100'"
+                                        class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Pickup</button>
                             </div>
                             
-                            <div class="space-y-3">
-                                <span class="font-black text-slate-400 uppercase text-[10px] tracking-widest pl-1">Payment Method</span>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button @click="paymentMethod = 'Cash (COD)'" 
-                                            :class="paymentMethod === 'Cash (COD)' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-white'"
-                                            class="py-3 border-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Cash (COD)</button>
-                                    <button @click="paymentMethod = 'E-Wallet'" 
-                                            :class="paymentMethod === 'E-Wallet' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-white'"
-                                            class="py-3 border-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">E-Wallet</button>
+                            <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
+                                <div class="flex justify-between items-center" x-show="orderType === 'Delivery'">
+                                    <div>
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Delivering To</p>
+                                        <p class="text-xs font-black text-slate-700 max-w-[200px] truncate" x-text="addresses[0] && useCurrentAddress ? addresses[0].Add_Street : (manualAddress.street || 'Set Address')"></p>
+                                    </div>
+                                    <button @click="useCurrentAddress = !useCurrentAddress; if(!useCurrentAddress && !addresses.length) showCartTray = false; activeTab = 'customer_orders'" 
+                                            class="p-3 bg-slate-50 rounded-xl text-[#006738]">
+                                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Payment</p>
+                                        <p class="text-xs font-black text-slate-700" x-text="paymentMethod || 'Select Method'"></p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @click="paymentMethod = 'Cash (COD)'" class="p-2 rounded-lg border text-[8px] font-black" :class="paymentMethod === 'Cash (COD)' ? 'border-[#006738] bg-green-50' : 'border-slate-100'">COD</button>
+                                        <button @click="paymentMethod = 'E-Wallet'" class="p-2 rounded-lg border text-[8px] font-black" :class="paymentMethod === 'E-Wallet' ? 'border-[#006738] bg-green-50' : 'border-slate-100'">WALLET</button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="space-y-3" x-show="orderType === 'Delivery'">
-                                <div class="flex justify-between items-center px-1">
-                                    <span class="font-black text-slate-400 uppercase text-[10px] tracking-widest">Delivery Address</span>
-                                    <button @click="useCurrentAddress = !useCurrentAddress" 
-                                            class="text-[10px] font-black text-[#006738] underline"
-                                            x-text="useCurrentAddress ? 'Change' : 'Use Current'"></button>
+                            <div class="flex justify-between items-end px-2">
+                                <div>
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grand Total</p>
+                                    <p class="text-4xl font-black text-[#ed1c24] leading-none" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></p>
                                 </div>
-                                
-                                <template x-if="useCurrentAddress">
-                                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p class="text-xs font-bold text-slate-600" x-text="addresses[0] ? addresses[0].Add_Street + ', ' + addresses[0].Add_City : 'No address set'"></p>
-                                    </div>
-                                </template>
+                                <div class="text-right">
+                                    <p x-show="orderType === 'Delivery' && cartTotal < 200" class="text-[9px] text-red-500 font-black uppercase mb-1">Min ₱200 for delivery</p>
+                                    <p class="text-[10px] font-bold text-slate-300">Inc. VAT & Fees</p>
+                                </div>
+                            </div>
 
-                                <template x-if="!useCurrentAddress">
-                                    <div class="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        <input type="text" x-model="manualAddress.street" placeholder="Street / House No." class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs outline-none focus:border-[#006738]">
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <input type="text" x-model="manualAddress.brgy" placeholder="Barangay" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
-                                            <input type="text" x-model="manualAddress.city" placeholder="City" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
+                            <button @click="placeOrder()" 
+                                    :disabled="!isCartValid"
+                                    :class="!isCartValid ? 'opacity-50 grayscale cursor-not-allowed bg-slate-400' : 'bg-[#006738] hover:scale-[1.02] active:scale-95 shadow-xl shadow-green-900/20'"
+                                    class="w-full text-white font-black py-6 rounded-[2.5rem] transition-all uppercase tracking-[0.2em] text-sm">
+                                Confirm Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Options Modal (Dynamic Pricing) -->
+            <div x-show="showMenuOptionsModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" x-cloak x-transition>
+                <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+                    <div class="relative h-64 bg-slate-100">
+                        <template x-if="selectedMenuItemForOptions?.Menu_Image">
+                            <img :src="selectedMenuItemForOptions.Menu_Image" class="w-full h-full object-cover">
+                        </template>
+                        <div class="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-white via-white/80 to-transparent">
+                            <h3 class="text-3xl font-black text-slate-800 font-poppins" x-text="selectedMenuItemForOptions?.Menu_Name"></h3>
+                            <p class="text-slate-500 text-sm italic" x-text="selectedMenuItemForOptions?.Menu_Description"></p>
+                        </div>
+                        <button @click="showMenuOptionsModal = false; selectedMenuItemForOptions = null" class="absolute top-6 right-6 w-12 h-12 bg-black/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-black/40 transition-all">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-10 space-y-10">
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Choose Your Size</h4>
+                            <div class="grid grid-cols-1 gap-4">
+                                <button @click="menuOptions = { size: 'Small', addonPrice: 0 }" 
+                                        :class="menuOptions.size === 'Small' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
+                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group overflow-hidden relative">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Small' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                            <span class="font-black">SM</span>
                                         </div>
-                                        <input type="text" x-model="manualAddress.landmark" placeholder="Nearest Landmark" class="w-full bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs">
+                                        <span class="font-black text-slate-700">Small</span>
                                     </div>
-                                </template>
-                            </div>
-
-                            <div class="flex justify-between items-center py-2">
-                                <span class="font-black text-slate-400 uppercase text-xs">Total Amount</span>
-                                <span class="text-3xl font-black text-[#006738]" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></span>
-                            </div>
-
-                            <div class="space-y-4">
-                                <button @click="placeOrder()" 
-                                        :disabled="!isCartValid"
-                                        :class="!isCartValid ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 shadow-green-900/10'"
-                                        class="w-full bg-[#006738] text-white font-black py-5 rounded-[2rem] shadow-xl transition-all uppercase tracking-[0.2em] text-xs">
-                                    Check Out Now
+                                    <span class="text-sm font-black text-slate-400 italic">Free Upgrade</span>
+                                    <div x-show="menuOptions.size === 'Small'" class="absolute -right-2 -bottom-2 bg-[#006738] text-white p-2 rounded-tl-2xl">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </div>
                                 </button>
-                                
-                                <div class="space-y-1 text-center">
-                                    <p x-show="orderType === 'Delivery' && cartTotal < 200" class="text-[10px] text-red-500 font-black uppercase tracking-widest leading-none">
-                                        Min. ₱200 for delivery (Current: ₱<span x-text="cartTotal"></span>)
-                                    </p>
-                                    <p x-show="!paymentMethod" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
-                                        Please select payment method
-                                    </p>
-                                    <p x-show="orderType === 'Delivery' && !useCurrentAddress && (!manualAddress.street || !manualAddress.city || !manualAddress.brgy)" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
-                                        Please enter complete delivery address
-                                    </p>
-                                    <p x-show="orderType === 'Delivery' && useCurrentAddress && (!addresses || addresses.length === 0)" class="text-[10px] text-orange-500 font-black uppercase tracking-widest leading-none">
-                                        Saved address missing. Use manual entry.
-                                    </p>
-                                </div>
+
+                                <button @click="menuOptions = { size: 'Medium', addonPrice: 30 }" 
+                                        :class="menuOptions.size === 'Medium' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
+                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group relative overflow-hidden">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Medium' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                            <span class="font-black">MD</span>
+                                        </div>
+                                        <span class="font-black text-slate-700">Medium</span>
+                                    </div>
+                                    <span class="text-sm font-black text-[#006738]">+ ₱30</span>
+                                </button>
+
+                                <button @click="menuOptions = { size: 'Large', addonPrice: 50 }" 
+                                        :class="menuOptions.size === 'Large' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
+                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group relative overflow-hidden">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Large' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                            <span class="font-black">LG</span>
+                                        </div>
+                                        <span class="font-black text-slate-700">Large</span>
+                                    </div>
+                                    <span class="text-sm font-black text-[#006738]">+ ₱50</span>
+                                </button>
                             </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-8 border-t-2 border-slate-50">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Price</p>
+                                <p class="text-4xl font-black text-[#006738]" x-text="'₱' + (parseFloat(selectedMenuItemForOptions?.Menu_Price || 0) + menuOptions.addonPrice).toFixed(0)"></p>
+                            </div>
+                            <button @click="confirmOptions" class="bg-[#ffec00] text-black px-12 py-5 rounded-[2rem] font-black shadow-xl shadow-yellow-500/10 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                                Add to Tray
+                            </button>
                         </div>
                     </div>
                 </div>
