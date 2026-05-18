@@ -132,6 +132,11 @@ $user_id = $_SESSION['user_id'];
                 this.activeTab = 'order_now';
             }
             this.showBranchPicker = !this.selectedBranch;
+            
+            // Auto-slide carousel
+            setInterval(() => {
+                this.currentCarousel = (this.currentCarousel + 1) % this.carouselItems.length;
+            }, 6000);
         }
         if(this.role === 'Driver') {
             this.fetchRiderDeliveries();

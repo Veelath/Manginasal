@@ -182,17 +182,30 @@
         <div x-show="!showAuthForm">
             <!-- Hero Banner -->
             <section class="relative w-full h-[300px] sm:h-[450px] overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" alt="Delicious Grilled Chicken" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center flex-col text-center p-6 sm:p-12">
-                    <h1 class="text-white text-4xl sm:text-7xl font-black mb-8 px-4 leading-tight italic drop-shadow-2xl">Juicy & Lami na Grilled Chicken!</h1>
-                    <button @click="showAuthForm = true; isLogin = true" class="bg-[#006738] text-white text-lg sm:text-2xl font-black uppercase tracking-[0.2em] px-12 sm:px-20 py-4 sm:py-6 rounded-full hover:bg-white hover:text-[#006738] transition-all transform hover:scale-105 active:scale-95 shadow-2xl">Order Now</button>
-                    <!-- Carousel Indicators -->
-                    <div class="absolute bottom-8 flex gap-3">
-                        <div class="w-12 h-1 bg-white rounded-full"></div>
-                        <div class="w-12 h-1 bg-white/30 rounded-full"></div>
-                        <div class="w-12 h-1 bg-white/30 rounded-full"></div>
-                        <div class="w-12 h-1 bg-white/30 rounded-full"></div>
+                <template x-for="(slide, index) in slides" :key="index">
+                    <div x-show="currentSlide === index" 
+                         x-transition:enter="transition ease-out duration-1000"
+                         x-transition:enter-start="opacity-0 scale-105"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-1000"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute inset-0">
+                        <img :src="slide.image" :alt="slide.title" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center flex-col text-center p-6 sm:p-12">
+                            <h1 class="text-white text-4xl sm:text-7xl font-black mb-8 px-4 leading-tight italic drop-shadow-2xl" x-text="slide.title"></h1>
+                            <button @click="showAuthForm = true; isLogin = true" class="bg-[#006738] text-white text-lg sm:text-2xl font-black uppercase tracking-[0.2em] px-12 sm:px-20 py-4 sm:py-6 rounded-full hover:bg-white hover:text-[#006738] transition-all transform hover:scale-105 active:scale-95 shadow-2xl">Order Now</button>
+                        </div>
                     </div>
+                </template>
+
+                <!-- Carousel Indicators -->
+                <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                    <template x-for="(slide, index) in slides" :key="'ind'+index">
+                        <button @click="currentSlide = index" 
+                                :class="currentSlide === index ? 'w-12 h-1 bg-white' : 'w-12 h-1 bg-white/30 hover:bg-white/50'"
+                                class="rounded-full transition-all duration-300"></button>
+                    </template>
                 </div>
             </section>
 
@@ -345,6 +358,28 @@
                 password: '',
                 loading: false,
                 message: null,
+                // Slider state
+                currentSlide: 0,
+                slides: [
+                    { 
+                        title: 'Juicy & Lami na Grilled Chicken!', 
+                        image: 'https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
+                    },
+                    { 
+                        title: 'Experience Authentic Pinoy Flavors!', 
+                        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1920&q=80'
+                    },
+                    { 
+                        title: 'Share the Joy with Fiesta Meals!', 
+                        image: 'https://images.unsplash.com/photo-1563379091339-03b21ef4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
+                    }
+                ],
+                init() {
+                    setInterval(() => {
+                        this.currentSlide = (this.currentSlide + 1) % this.slides.length;
+                    }, 5000);
+                    lucide.createIcons();
+                },
                 toggleAuth() {
                     this.isLogin = !this.isLogin;
                     this.isResetMode = false;
