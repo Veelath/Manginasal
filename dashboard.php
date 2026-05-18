@@ -772,7 +772,7 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
-    async submitStaff() {
+    async submitStaff(stayOpen = false) {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
             body: JSON.stringify({ action: 'create_staff', ...this.newStaff })
@@ -782,11 +782,14 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.fetchWorkforce();
             this.fetchBranchStats();
-            this.showStaffModal = false;
+            this.newStaff = { fname: '', lname: '', email: '', mobile: '', role: 'Kitchen Staff', password: '' };
+            if (!stayOpen) {
+                this.showStaffModal = false;
+            }
         }
     },
 
-    async submitRider() {
+    async submitRider(stayOpen = false) {
         const res = await fetch('branch_manager_api.php', {
             method: 'POST',
             body: JSON.stringify({ action: 'create_rider', ...this.newRider })
@@ -796,7 +799,10 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.fetchWorkforce();
             this.fetchBranchStats();
-            this.showRiderModal = false;
+            this.newRider = { fname: '', lname: '', email: '', mobile: '', password: '' };
+            if (!stayOpen) {
+                this.showRiderModal = false;
+            }
         }
     }
 }">
@@ -2883,7 +2889,10 @@ $user_id = $_SESSION['user_id'];
                             <input type="password" x-model="newStaff.password" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
                         </div>
                     </div>
-                    <button @click="submitStaff()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
+                    <div class="flex flex-col gap-3">
+                        <button @click="submitStaff(false)" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
+                        <button @click="submitStaff(true)" class="w-full bg-[#f1f5f1] text-[#006738] font-black py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-sm">Save & Add Another</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2913,7 +2922,10 @@ $user_id = $_SESSION['user_id'];
                         <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Password</label>
                         <input type="password" x-model="newRider.password" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
                     </div>
-                    <button @click="submitRider()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Register Rider</button>
+                    <div class="flex flex-col gap-3">
+                        <button @click="submitRider(false)" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Register Rider</button>
+                        <button @click="submitRider(true)" class="w-full bg-[#f1f5f1] text-[#006738] font-black py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-sm">Save & Add Another</button>
+                    </div>
                 </div>
             </div>
         </div>
