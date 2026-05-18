@@ -694,10 +694,15 @@ $user_id = $_SESSION['user_id'];
     <!-- Sidebar -->
     <aside :class="sidebarOpen ? 'w-64' : 'w-20'" class="fixed left-0 top-0 h-full bg-[#006738] text-white transition-all duration-300 z-50 overflow-hidden hidden md:flex flex-col">
         <div class="p-6 flex items-center gap-3">
-            <div class="bg-white p-1 rounded-lg cursor-pointer" @click="activeTab = 'overview'">
-                <img src="logo.png" class="w-8 h-8 object-contain" alt="Mang Inasal">
+            <!-- Sidebar Logo styled like index.php -->
+            <div class="relative group cursor-pointer" @click="activeTab = 'overview'">
+                <div class="inline-block bg-[#ffec00] p-1.5 sm:p-2 border-[2px] sm:border-[2.5px] border-black rounded-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-transform group-hover:scale-105">
+                    <div class="text-black font-poppins font-black leading-none tracking-tighter">
+                        <span x-show="sidebarOpen" class="block text-[6px] sm:text-[8px] uppercase italic text-black">Mang</span>
+                        <span class="block text-sm sm:text-xl uppercase text-[#ed1c24] -mt-0.5" :class="!sidebarOpen ? 'text-lg' : ''">Inasal</span>
+                    </div>
+                </div>
             </div>
-            <span x-show="sidebarOpen" class="font-poppins font-black text-xl tracking-tight uppercase cursor-pointer" @click="activeTab = 'overview'" x-transition>Inasal</span>
         </div>
 
         <nav class="flex-1 mt-6 px-4 space-y-2">
@@ -904,79 +909,80 @@ $user_id = $_SESSION['user_id'];
             </div>
         </header>
 
-        <!-- Stats Grid -->
-        <?php if ($role !== 'Customer'): ?>
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <?php if ($role === 'System Admin'): ?>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                    <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="store" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Total Branches</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.branches"></p>
-                </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                    <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="users" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Managers</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.managers"></p>
-                </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                    <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="users-2" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Branch Staff</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
-                </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                    <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="bike" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Riders</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
-                </div>
-            <?php elseif ($role === 'Branch Manager'): ?>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                    <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="users" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Kitchen & Staff</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
-                </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden group">
-                    <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
-                        <i data-lucide="bike" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Rider Fleet</h3>
-                    <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
-                </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden col-span-1 lg:col-span-2">
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-                            <i data-lucide="trending-up" class="w-7 h-7"></i>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Today's Sales</p>
-                            <h3 class="text-2xl font-black text-emerald-600" x-text="'₱' + parseFloat(stats.dailySales).toLocaleString()"></h3>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Progress</span>
-                            <span class="text-xs font-bold text-slate-600" x-text="Math.round((stats.dailySales / stats.dailyGoal) * 100) + '% of ₱' + stats.dailyGoal.toLocaleString()"></span>
-                        </div>
-                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-emerald-500 transition-all duration-1000" :style="'width: ' + Math.min(100, (stats.dailySales / stats.dailyGoal) * 100) + '%'"></div>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </section>
-        <?php endif; ?>
+        
 
         <!-- Dynamic Role Content -->
         <div x-show="activeTab === 'overview' && role !== 'Customer'" class="space-y-8">
+            <!-- Stats Grid - Moved here from above header as requested -->
+            <?php if ($role !== 'Customer'): ?>
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <?php if ($role === 'System Admin'): ?>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                        <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="store" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Total Branches</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.branches"></p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="users" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Managers</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.managers"></p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                        <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="users-2" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Branch Staff</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                        <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="bike" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Riders</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
+                    </div>
+                <?php elseif ($role === 'Branch Manager'): ?>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                        <div class="w-14 h-14 bg-green-50 text-[#006738] rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="users" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Kitchen & Staff</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden group">
+                        <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="bike" class="w-7 h-7 font-bold"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Rider Fleet</h3>
+                        <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden col-span-1 lg:col-span-2">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-7 h-7"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Today's Sales</p>
+                                <h3 class="text-2xl font-black text-emerald-600" x-text="'₱' + parseFloat(stats.dailySales || 0).toLocaleString()"></h3>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Progress</span>
+                                <span class="text-xs font-bold text-slate-600" x-text="Math.round(((stats.dailySales || 0) / (stats.dailyGoal || 1)) * 100) + '% of ₱' + (stats.dailyGoal || 0).toLocaleString()"></span>
+                            </div>
+                            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-500 transition-all duration-1000" :style="'width: ' + Math.min(100, ((stats.dailySales || 0) / (stats.dailyGoal || 1)) * 100) + '%'"></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </section>
+            <?php endif; ?>
             <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-8 md:p-12 relative group">
                 <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                     <i data-lucide="flame" class="w-64 h-64 text-[#006738]"></i>
