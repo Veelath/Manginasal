@@ -2213,7 +2213,12 @@ $user_id = $_SESSION['user_id'];
                             <div class="pt-4 border-t border-slate-50 flex justify-between items-center">
                                 <div>
                                     <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</p>
-                                    <p class="text-sm font-black text-[#006738]" x-text="order.Pay_Method"></p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-black text-[#006738]" x-text="order.Pay_Method"></p>
+                                        <span :class="order.Pay_Status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'" 
+                                              class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded" 
+                                              x-text="order.Pay_Status"></span>
+                                    </div>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Collect Amount</p>
@@ -2689,7 +2694,10 @@ $user_id = $_SESSION['user_id'];
                                     <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                                         <i data-lucide="wallet" class="w-4 h-4"></i>
                                     </div>
-                                    <span class="font-bold text-slate-800 text-sm" x-text="selectedOrder?.Pay_Method || 'Cash'"></span>
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-800 text-sm" x-text="selectedOrder?.Pay_Method || 'Cash'"></span>
+                                        <span :class="selectedOrder?.Pay_Status === 'Paid' ? 'text-green-500' : 'text-orange-500'" class="text-[10px] font-black uppercase" x-text="selectedOrder?.Pay_Status"></span>
+                                    </div>
                                 </div>
                             </div>
                             <div>

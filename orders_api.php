@@ -256,7 +256,7 @@ try {
             exit;
         }
         $stmt = $pdo->prepare("
-            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount
+            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount, p.Pay_Status
             FROM orders o
             JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
             JOIN ADDRESS a ON o.Order_Add_ID = a.Add_ID
@@ -279,6 +279,10 @@ try {
         $stmt->execute([$order_id]);
         
         $stmt = $pdo->prepare("UPDATE DELIVERY SET Dlvry_Arrival_Time = NOW() WHERE Dlvry_Order_ID = ?");
+        $stmt->execute([$order_id]);
+
+        // Automatically mark COD as Paid on delivery
+        $stmt = $pdo->prepare("UPDATE PAYMENT SET Pay_Status = 'Paid' WHERE Pay_Order_ID = ? AND Pay_Method = 'Cash (COD)'");
         $stmt->execute([$order_id]);
 
         // Get Rider ID for this delivery
