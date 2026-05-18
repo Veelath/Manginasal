@@ -104,6 +104,8 @@ $user_id = $_SESSION['user_id'];
     message: null,
     showAddressPicker: false,
     selectedAddressId: null,
+    etaInput: '',
+    editEtaOrderId: null,
 
     closeAllModals() {
         this.showBranchModal = false;
@@ -415,6 +417,21 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.riderDeliveries = data.data;
             this.$nextTick(() => lucide.createIcons());
+        }
+    },
+
+    async updateEta() {
+        if(!this.editEtaOrderId || !this.etaInput) return;
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_eta', order_id: this.editEtaOrderId, eta: this.etaInput })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchRiderDeliveries();
+            this.editEtaOrderId = null;
+            this.etaInput = '';
         }
     },
 
@@ -988,9 +1005,11 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="navigation" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">Active Deliveries</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
-                    <i data-lucide="map-pin" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen">My Route</span>
+                <a href="#" @click="activeTab = 'profile'" 
+                   :class="activeTab === 'profile' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="user-circle" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Profile</span>
                 </a>
             <?php endif; ?>
 
@@ -2210,19 +2229,32 @@ $user_id = $_SESSION['user_id'];
                                     </a>
                                 </div>
                             </div>
-                            <div class="pt-4 border-t border-slate-50 flex justify-between items-center">
-                                <div>
-                                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</p>
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-sm font-black text-[#006738]" x-text="order.Pay_Method"></p>
-                                        <span :class="order.Pay_Status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'" 
-                                              class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded" 
-                                              x-text="order.Pay_Status"></span>
+                            <div class="pt-4 border-t border-slate-50 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-sm font-black text-[#006738]" x-text="order.Pay_Method"></p>
+                                            <span :class="order.Pay_Status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'" 
+                                                  class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded" 
+                                                  x-text="order.Pay_Status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Collect Amount</p>
+                                        <p class="text-sm font-black text-slate-800" x-text="order.Pay_Method === 'Cash (COD)' ? '₱' + parseFloat(order.Pay_Amount).toFixed(0) : 'Already Paid'"></p>
                                     </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Collect Amount</p>
-                                    <p class="text-sm font-black text-slate-800" x-text="order.Pay_Method === 'Cash (COD)' ? '₱' + parseFloat(order.Pay_Amount).toFixed(0) : 'Already Paid'"></p>
+
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="text-[10px] font-black uppercase text-slate-400">Current ETA</p>
+                                        <p class="text-xs font-bold text-[#006738]" x-text="order.Dlvry_Current_ETA ? new Date(order.Dlvry_Current_ETA).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'Set ETA'"></p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="time" x-model="etaInput" @click="editEtaOrderId = order.Order_ID" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-[#006738]">
+                                        <button @click="editEtaOrderId = order.Order_ID; updateEta()" class="bg-[#ffec00] text-black px-3 py-1.5 rounded-lg text-xs font-black uppercase hover:bg-yellow-400 transition-colors">Update</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2655,35 +2687,88 @@ $user_id = $_SESSION['user_id'];
                     
                     <div class="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                         <!-- Enhanced Status Visualization -->
-                        <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                             <div class="flex items-center gap-4 mb-6">
-                                <div class="w-14 h-14 bg-[#ffec00] rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
-                                    <i :data-lucide="selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? 'bike' : 'timer'" class="w-7 h-7 text-black"></i>
+                        <div class="bg-white p-6 rounded-[2.5rem] border-4 border-slate-50 shadow-sm overflow-hidden relative">
+                             <!-- Progress Bar Background Map-like feel -->
+                             <div class="absolute inset-0 opacity-5 pointer-events-none">
+                                 <div class="w-full h-full" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png')"></div>
+                             </div>
+
+                             <div class="relative z-10 flex flex-col gap-6">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-16 h-16 bg-[#ffec00] rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/20 transform -rotate-3">
+                                            <i :data-lucide="selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? 'bike' : (selectedOrder?.Order_Stat === 'Completed' ? 'check-circle' : 'utensils')" class="w-8 h-8 text-black"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Current Status</p>
+                                            <p class="text-2xl font-black text-[#006738] font-poppins italic uppercase" x-text="selectedOrder?.Order_Stat"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right" x-show="selectedOrder?.Dlvry_Current_ETA">
+                                        <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Arriving At</p>
+                                        <p class="text-xl font-black text-[#ed1c24] font-poppins" x-text="new Date(selectedOrder.Dlvry_Current_ETA).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })"></p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</p>
-                                    <p class="text-xl font-black text-slate-800 font-poppins" x-text="selectedOrder?.Order_Stat"></p>
+                                
+                                <div class="space-y-6">
+                                    <!-- Progress Line -->
+                                    <div class="relative flex items-center px-2">
+                                        <div class="absolute left-0 right-0 h-1.5 bg-slate-100 rounded-full"></div>
+                                        <div class="absolute left-0 h-1.5 bg-[#006738] rounded-full transition-all duration-1000" 
+                                             :style="`width: ${
+                                                selectedOrder && selectedOrder.Order_Stat === 'Pending' ? '12.5%' : 
+                                                selectedOrder && selectedOrder.Order_Stat === 'Preparing' ? '37.5%' :
+                                                selectedOrder && selectedOrder.Order_Stat === 'Ready' ? '62.5%' :
+                                                selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? '87.5%' :
+                                                selectedOrder && selectedOrder.Order_Stat === 'Completed' ? '100%' : '0%'
+                                             }`"></div>
+                                        
+                                        <!-- Step Pins -->
+                                        <div class="relative w-full flex justify-between">
+                                            <div class="w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center" :class="selectedOrder?.Order_Stat === 'Pending' ? 'bg-[#ffec00]' : (['Preparing','Ready','Delivering','Completed'].includes(selectedOrder?.Order_Stat) ? 'bg-[#006738]' : 'bg-slate-200')">
+                                                <i data-lucide="clipboard-list" class="w-3 h-3 text-white"></i>
+                                            </div>
+                                            <div class="w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center" :class="selectedOrder?.Order_Stat === 'Preparing' ? 'bg-[#ffec00]' : (['Ready','Delivering','Completed'].includes(selectedOrder?.Order_Stat) ? 'bg-[#006738]' : 'bg-slate-200')">
+                                                <i data-lucide="flame" class="w-3 h-3 text-white"></i>
+                                            </div>
+                                            <div class="w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center" :class="selectedOrder?.Order_Stat === 'Ready' ? 'bg-[#ffec00]' : (['Delivering','Completed'].includes(selectedOrder?.Order_Stat) ? 'bg-[#006738]' : 'bg-slate-200')">
+                                                <i data-lucide="box" class="w-3 h-3 text-white"></i>
+                                            </div>
+                                            <div class="w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center" :class="selectedOrder?.Order_Stat === 'Delivering' ? 'bg-[#ffec00]' : (selectedOrder?.Order_Stat === 'Completed' ? 'bg-[#006738]' : 'bg-slate-200')">
+                                                <i data-lucide="bike" class="w-3 h-3 text-white"></i>
+                                            </div>
+                                            <div class="w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center" :class="selectedOrder?.Order_Stat === 'Completed' ? 'bg-[#006738]' : 'bg-slate-200'">
+                                                <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-between text-[7px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
+                                        <span>Ordered</span>
+                                        <span>Cooking</span>
+                                        <span>Ready</span>
+                                        <span>On Way</span>
+                                        <span>Enjoy!</span>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="space-y-4">
-                                <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
-                                    <div class="h-full bg-[#006738] transition-all duration-1000" 
-                                         :style="`width: ${
-                                            selectedOrder && selectedOrder.Order_Stat === 'Pending' ? '20%' : 
-                                            selectedOrder && selectedOrder.Order_Stat === 'Preparing' ? '40%' :
-                                            selectedOrder && selectedOrder.Order_Stat === 'Ready' ? '60%' :
-                                            selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? '80%' :
-                                            selectedOrder && selectedOrder.Order_Stat === 'Completed' ? '100%' : '0%'
-                                         }`"></div>
+
+                                <!-- Dynamic Status Description -->
+                                <div class="bg-green-50 p-4 rounded-2xl border border-green-100 flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#006738] shadow-sm">
+                                        <i :data-lucide="selectedOrder?.Order_Stat === 'Preparing' ? 'chef-hat' : (selectedOrder?.Order_Stat === 'Delivering' ? 'truck' : 'info')" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-xs font-black text-slate-800" x-text="
+                                            selectedOrder?.Order_Stat === 'Pending' ? 'Hang tight, we are confirming your order!' :
+                                            selectedOrder?.Order_Stat === 'Preparing' ? 'Your Mang Inasal favorites are now grilling!' :
+                                            selectedOrder?.Order_Stat === 'Ready' ? 'Order is ready and waiting for a rider.' :
+                                            selectedOrder?.Order_Stat === 'Delivering' ? 'Your grill fix is on its way to you!' :
+                                            'Deliciousness delivered! Hope you enjoy your meal.'
+                                        "></h5>
+                                        <p class="text-[10px] text-slate-500 font-bold" x-text="selectedOrder?.Order_Stat === 'Preparing' ? 'Nuot sa buto sarap is coming!' : ''"></p>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
-                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Pending' ? 'text-[#006738]' : ''">Placed</span>
-                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Preparing' ? 'text-[#006738]' : ''">Kitchen</span>
-                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Ready' ? 'text-[#006738]' : ''">Ready</span>
-                                    <span :class="selectedOrder && ['Delivering', 'Completed'].includes(selectedOrder.Order_Stat) ? 'text-[#006738]' : ''">Out</span>
-                                </div>
-                            </div>
+                             </div>
                         </div>
 
                         <!-- Info Grid -->
@@ -2768,7 +2853,9 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
+        <!-- Universal Profile Tab -->
         <div x-show="activeTab === 'profile'" x-cloak>
             <div class="flex justify-between items-center mb-8">
                 <div>
@@ -2818,9 +2905,8 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <?php endif; ?>
-
-        <!-- Edit Branch Modal -->
+        <?php if ($role === 'Customer'): ?>
+        <!-- Customer Modals -->
         <div x-show="showEditBranchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditBranchModal = false">
                 <div class="bg-[#006738] p-6 text-white flex justify-between items-center">

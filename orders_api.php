@@ -184,9 +184,58 @@ try {
         echo json_encode(['success' => true, 'data' => $orders]);
     }
     elseif ($action === 'get_profile') {
-        $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_Num FROM CUSTOMER WHERE Cust_ID = ?");
-        $stmt->execute([$user_id]);
-        $profile = $stmt->fetch();
+        if ($role === 'Customer') {
+            $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_Num FROM CUSTOMER WHERE Cust_ID = ?");
+            $stmt->execute([$user_id]);
+            $profile = $stmt->fetch();
+            $data = [
+                'Cust_FName' => $profile['Cust_FName'],
+                'Cust_LName' => $profile['Cust_LName'],
+                'Cust_Email' => $profile['Cust_Email'],
+                'Cust_MobileNum' => $profile['Cust_Num']
+            ];
+        } elseif ($role === 'System Admin') {
+            $stmt = $pdo->prepare("SELECT Admin_FName, Admin_LName, Admin_Email, Admin_MobileNum FROM SYSTEM_ADMIN WHERE Admin_ID = ?");
+            $stmt->execute([$user_id]);
+            $profile = $stmt->fetch();
+            $data = [
+                'Cust_FName' => $profile['Admin_FName'],
+                'Cust_LName' => $profile['Admin_LName'],
+                'Cust_Email' => $profile['Admin_Email'],
+                'Cust_MobileNum' => $profile['Admin_MobileNum']
+            ];
+        } elseif ($role === 'Branch Manager') {
+            $stmt = $pdo->prepare("SELECT Mgr_FName, Mgr_LName, Mgr_Email, Mgr_MobileNum FROM BRANCH_MANAGER WHERE Mgr_ID = ?");
+            $stmt->execute([$user_id]);
+            $profile = $stmt->fetch();
+            $data = [
+                'Cust_FName' => $profile['Mgr_FName'],
+                'Cust_LName' => $profile['Mgr_LName'],
+                'Cust_Email' => $profile['Mgr_Email'],
+                'Cust_MobileNum' => $profile['Mgr_MobileNum']
+            ];
+        } elseif ($role === 'Driver') {
+            $stmt = $pdo->prepare("SELECT Rider_FName, Rider_LName, Rider_Email, Rider_MobileNum FROM RIDER WHERE Rider_ID = ?");
+            $stmt->execute([$user_id]);
+            $profile = $stmt->fetch();
+            $data = [
+                'Cust_FName' => $profile['Rider_FName'],
+                'Cust_LName' => $profile['Rider_LName'],
+                'Cust_Email' => $profile['Rider_Email'],
+                'Cust_MobileNum' => $profile['Rider_MobileNum']
+            ];
+        } else {
+            // Staff
+            $stmt = $pdo->prepare("SELECT Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum FROM STAFF WHERE Staff_ID = ?");
+            $stmt->execute([$user_id]);
+            $profile = $stmt->fetch();
+            $data = [
+                'Cust_FName' => $profile['Staff_FName'],
+                'Cust_LName' => $profile['Staff_LName'],
+                'Cust_Email' => $profile['Staff_Email'],
+                'Cust_MobileNum' => $profile['Staff_MobileNum']
+            ];
+        }
         
         $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ? ORDER BY Add_ID DESC");
         $stmt->execute([$user_id]);
@@ -194,12 +243,7 @@ try {
         
         echo json_encode([
             'success' => true, 
-            'profile' => [
-                'Cust_FName' => $profile['Cust_FName'],
-                'Cust_LName' => $profile['Cust_LName'],
-                'Cust_Email' => $profile['Cust_Email'],
-                'Cust_MobileNum' => $profile['Cust_Num']
-            ], 
+            'profile' => $data,
             'addresses' => $addresses
         ]);
     }
@@ -218,7 +262,18 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE CUSTOMER SET Cust_FName = ?, Cust_LName = ?, Cust_Num = ? WHERE Cust_ID = ?");
+        if ($role === 'Customer') {
+            $stmt = $pdo->prepare("UPDATE CUSTOMER SET Cust_FName = ?, Cust_LName = ?, Cust_Num = ? WHERE Cust_ID = ?");
+        } elseif ($role === 'System Admin') {
+            $stmt = $pdo->prepare("UPDATE SYSTEM_ADMIN SET Admin_FName = ?, Admin_LName = ?, Admin_MobileNum = ? WHERE Admin_ID = ?");
+        } elseif ($role === 'Branch Manager') {
+            $stmt = $pdo->prepare("UPDATE BRANCH_MANAGER SET Mgr_FName = ?, Mgr_LName = ?, Mgr_MobileNum = ? WHERE Mgr_ID = ?");
+        } elseif ($role === 'Driver') {
+            $stmt = $pdo->prepare("UPDATE RIDER SET Rider_FName = ?, Rider_LName = ?, Rider_MobileNum = ? WHERE Rider_ID = ?");
+        } else {
+            $stmt = $pdo->prepare("UPDATE STAFF SET Staff_FName = ?, Staff_LName = ?, Staff_MobileNum = ? WHERE Staff_ID = ?");
+        }
+        
         $stmt->execute([$fname, $lname, $mobile, $user_id]);
 
         echo json_encode(['success' => true, 'message' => 'Profile updated successfully!']);
@@ -256,7 +311,7 @@ try {
             exit;
         }
         $stmt = $pdo->prepare("
-            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount, p.Pay_Status
+            SELECT o.*, c.Cust_FName, c.Cust_LName, a.Add_Street, a.Add_City, p.Pay_Method, p.Pay_Amount, p.Pay_Status, d.Dlvry_Current_ETA
             FROM orders o
             JOIN CUSTOMER c ON o.Order_Cust_ID = c.Cust_ID
             JOIN ADDRESS a ON o.Order_Add_ID = a.Add_ID
@@ -304,6 +359,27 @@ try {
         
         $pdo->commit();
         echo json_encode(['success' => true, 'message' => 'Delivery completed!']);
+    }
+    elseif ($action === 'update_eta') {
+        if ($role !== 'Driver') {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+        $order_id = $data['order_id'];
+        $eta = $data['eta']; // Expected as HH:MM or similar, or a full datetime string
+
+        // Convert 12h/24h string to internal format if needed
+        // For simplicity, we'll just store it as a time for today if it matches HH:MM
+        if (preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])$/', $eta)) {
+            $eta_datetime = date('Y-m-d') . ' ' . $eta . ':00';
+        } else {
+            $eta_datetime = $eta;
+        }
+
+        $stmt = $pdo->prepare("UPDATE DELIVERY SET Dlvry_Current_ETA = ? WHERE Dlvry_Order_ID = ?");
+        $stmt->execute([$eta_datetime, $order_id]);
+
+        echo json_encode(['success' => true, 'message' => 'ETA updated successfully!']);
     }
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
