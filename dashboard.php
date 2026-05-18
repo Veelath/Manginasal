@@ -63,18 +63,18 @@ $user_id = $_SESSION['user_id'];
     showBranchModal: false,
     currentCarousel: 0,
     carouselItems: [
-        { title: 'Extra Creamy Halo-Halo', subtitle: 'HULING LASAP!', image: 'https://images.unsplash.com/photo-1582236314828-591a27e467cf?q=80&w=2000&auto=format&fit=crop', color: '#006738' },
-        { title: 'PM1: Paa with Rice', subtitle: 'UNLI-RICE EXPERIENCE', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=2000&auto=format&fit=crop', color: '#ffec00' },
-        { title: 'Family Fiesta', subtitle: 'SHARE THE GRILL', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=2000&auto=format&fit=crop', color: '#006738' }
+        { title: 'Juicy & Lami na Grilled Chicken!', subtitle: 'HULING LASAP!', image: 'hero-1.jpg', color: '#006738' },
+        { title: 'Experience Authentic Pinoy Flavors!', subtitle: 'UNLI-RICE EXPERIENCE', image: 'hero2.jpg', color: '#ffec00' },
+        { title: 'Share the Joy with Fiesta Meals!', subtitle: 'SHARE THE GRILL', image: 'hero3.jpg', color: '#006738' }
     ],
     categories: [
-        { name: 'Must Try!', icon: 'star', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400&auto=format&fit=crop', db: 'Chicken' },
-        { name: 'Chicken Inasal', icon: 'flame', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=400&auto=format&fit=crop', db: 'Chicken' },
-        { name: 'Pork BBQ', icon: 'drumstick', image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330?q=80&w=400&auto=format&fit=crop', db: 'Pork' },
-        { name: 'Family Fiesta', icon: 'users', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&auto=format&fit=crop', db: 'Family Fiesta' },
-        { name: 'Buddy Fiesta', icon: 'user-2', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&auto=format&fit=crop', db: 'Buddy Fiesta' },
-        { name: 'Halo-Halo', icon: 'ice-cream', image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=400&auto=format&fit=crop', db: 'Dessert' },
-        { name: 'Palabok', icon: 'soup', image: 'https://images.unsplash.com/photo-1512058560550-42749359a767?q=80&w=400&auto=format&fit=crop', db: 'Palabok' }
+        { name: 'Must Try!', icon: 'star', image: 'must-try.jpg', db: 'Chicken' },
+        { name: 'Chicken Inasal', icon: 'flame', image: 'hero-1.jpg', db: 'Chicken' },
+        { name: 'Pork BBQ', icon: 'drumstick', image: 'pork.jpg', db: 'Pork' },
+        { name: 'Family Fiesta', icon: 'users', image: 'fiesta.jpg', db: 'Family Fiesta' },
+        { name: 'Buddy Fiesta', icon: 'user-2', image: 'fiesta.jpg', db: 'Buddy Fiesta' },
+        { name: 'Halo-Halo', icon: 'ice-cream', image: 'hal.jpg', db: 'Dessert' },
+        { name: 'Palabok', icon: 'soup', image: 'pal.jpg', db: 'Palabok' }
     ],
     selectedCategory: 'Chicken Inasal',
     searchQuery: '',

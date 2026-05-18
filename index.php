@@ -220,14 +220,14 @@
                     <!-- Must Try -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80" alt="Must Try" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="must-try.jpg" alt="Must Try" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Must Try</p>
                         </div>
                     </div>
                     <!-- Fiesta Group Meals -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80" alt="Fiesta Group Meals" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="fiesta.jpg" alt="Fiesta Group Meals" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Fiesta Group Meals</p>
                         </div>
                     </div>
@@ -241,21 +241,21 @@
                     <!-- Halo-Halo -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=400&q=80" alt="Halo-Halo" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="hal.jpg" alt="Halo-Halo" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Halo-Halo</p>
                         </div>
                     </div>
                     <!-- Palabok -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1512058560550-42749359a767?auto=format&fit=crop&w=400&q=80" alt="Palabok" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="pal.jpg" alt="Palabok" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Palabok</p>
                         </div>
                     </div>
                     <!-- Grilled Pork -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&w=400&q=80" alt="Grilled Pork" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="pork.jpg" alt="Grilled Pork" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Grilled Pork</p>
                         </div>
                     </div>
@@ -367,11 +367,11 @@
                     },
                     { 
                         title: 'Experience Authentic Pinoy Flavors!', 
-                        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1920&q=80'
+                        image: 'hero2.jpg'
                     },
                     { 
                         title: 'Share the Joy with Fiesta Meals!', 
-                        image: 'https://images.unsplash.com/photo-1563379091339-03b21ef4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
+                        image: 'hero3.jpg'
                     }
                 ],
                 init() {
