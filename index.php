@@ -234,7 +234,7 @@
                     <!-- Chicken Inasal -->
                     <div class="group cursor-pointer">
                         <div class="bg-white rounded-3xl p-4 sm:p-6 mb-4 transition-transform group-hover:scale-105 shadow-sm border border-slate-50">
-                            <img src="hero1.jpg" alt="Chicken Inasal" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
+                            <img src="chck.jpg" alt="Chicken Inasal" class="w-full aspect-square object-cover rounded-2xl mb-4 shadow-md">
                             <p class="text-center font-bold text-slate-800 text-sm sm:text-base tracking-tight">Chicken Inasal</p>
                         </div>
                     </div>
