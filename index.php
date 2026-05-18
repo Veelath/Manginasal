@@ -268,14 +268,13 @@
                     <div class="flex-1 space-y-6 sm:space-y-10 z-10 pb-16 sm:pb-24">
                         <h2 class="text-3xl sm:text-6xl font-black text-slate-800 font-poppins leading-[1.1] tracking-tight">Order Mang Inasal online for delivery or pick-up!</h2>
                         <p class="text-slate-700 text-lg sm:text-2xl font-bold leading-relaxed max-w-2xl">Enjoy unli-sulit at unli-saya with the all-new Mang Inasal app. It makes ordering for delivery or pick-up super easy, plus you get access to exclusive promos! <br> <span class="font-black text-slate-800">Download the app now.</span></p>
-                        <div class="flex flex-wrap items-center gap-4 pt-4 shrink-0">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform" alt="App Store">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform" alt="Google Play">
+                        <div class="flex flex-wrap items-center pt-4 shrink-0">
+                            <img src="socials2.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform" alt="Get it on Google Play and App Store">
                         </div>
                     </div>
                     <div class="flex-1 relative z-10 px-8 sm:px-0 flex justify-center">
                         <div class="relative w-full max-w-[500px] translate-y-16 sm:translate-y-24">
-                             <img src="phone-promo.jpg" class="w-full h-auto drop-shadow-2xl mix-blend-multiply" alt="App Preview">
+                             <img src="phone-promo.png" class="w-full h-auto drop-shadow-2xl mix-blend-multiply" alt="App Preview">
                         </div>
                     </div>
                 </div>
@@ -303,9 +302,8 @@
                     <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
                 </nav>
                 <!-- Store Badges in Footer -->
-                <div class="flex items-center gap-3 shrink-0">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="Google Play">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="App Store">
+                <div class="flex items-center shrink-0">
+                    <img src="socials2.png" class="h-9 sm:h-10 cursor-pointer hover:scale-105 transition-transform" alt="Google Play and App Store">
                 </div>
             </div>
 

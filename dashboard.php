@@ -2797,9 +2797,8 @@ $user_id = $_SESSION['user_id'];
                         <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
                     </nav>
                     <!-- Store Badges in Footer -->
-                    <div class="flex items-center gap-3 shrink-0">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="Google Play">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="App Store">
+                    <div class="flex items-center shrink-0">
+                        <img src="socials2.png" class="h-9 sm:h-10 cursor-pointer hover:scale-105 transition-transform" alt="Google Play and App Store">
                     </div>
                 </div>
 
