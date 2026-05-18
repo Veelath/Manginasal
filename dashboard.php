@@ -248,7 +248,10 @@ $user_id = $_SESSION['user_id'];
             body: JSON.stringify({ action: 'get_branches' })
         });
         const data = await res.json();
-        if(data.success) this.customerBranches = data.data;
+        if(data.success) {
+            this.customerBranches = data.data;
+            this.$nextTick(() => lucide.createIcons());
+        }
     },
 
     async selectBranch(branchId) {
@@ -3059,21 +3062,27 @@ $user_id = $_SESSION['user_id'];
              x-cloak>
             
             <div class="max-w-4xl w-full text-center">
-                <div class="bg-white p-2 rounded-2xl w-24 h-24 mx-auto mb-8 shadow-2xl relative">
-                    <img src="logo.png" class="w-full h-full object-contain" alt="Mang Inasal">
-                    <div class="absolute -bottom-2 -right-2 bg-[#ffec00] text-black text-[10px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12">NEW</div>
+                <!-- Logo with fallback like index.php -->
+                <div class="relative group cursor-pointer mx-auto mb-12 w-fit" @click="window.location.reload()">
+                    <img src="logo.png" alt="Mang Inasal" class="h-24 sm:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300 mix-blend-multiply" onerror="this.style.display='none'; document.getElementById('branch-picker-logo-fallback').style.display='block'">
+                    <div id="branch-picker-logo-fallback" style="display: none;" class="bg-[#ffec00] p-4 border-[4px] border-black rounded-sm shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="text-black font-poppins font-black leading-none tracking-tighter">
+                            <span class="block text-sm uppercase italic text-black">Mang</span>
+                            <span class="block text-4xl uppercase text-[#ed1c24] -mt-1">Inasal</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <h2 class="text-4xl md:text-6xl font-black text-white font-poppins mb-4 tracking-tight">KUNG SAAN ANG SARAP!</h2>
                 <p class="text-white/80 text-lg md:text-xl font-bold mb-12">Please select a branch to view our menu and start your order.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[50vh] overflow-y-auto no-scrollbar p-4">
-                    <template x-for="branch in customerBranches" :key="branch.Brnch_ID">
+                    <template x-for="(branch, index) in customerBranches" :key="branch.Brnch_ID">
                         <div @click="selectBranch(branch.Brnch_ID); activeTab = 'order_now'" 
                              class="bg-white/10 backdrop-blur-md border-2 border-white/20 p-8 rounded-[2.5rem] hover:bg-white hover:border-[#ffec00] transition-all duration-300 cursor-pointer group text-left relative overflow-hidden">
                             <div class="absolute -right-4 -top-4 w-20 h-20 bg-white/5 rounded-full group-hover:scale-150 transition-transform"></div>
                             <div class="w-12 h-12 bg-[#ffec00] text-black rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg relative z-10">
-                                <i data-lucide="store" class="w-6 h-6"></i>
+                                <i :data-lucide="['store', 'building', 'map-pin', 'chef-hat'][index % 4]" class="w-6 h-6"></i>
                             </div>
                             <div class="relative z-10">
                                 <h3 class="text-xl font-black text-white group-hover:text-slate-800 font-poppins mb-2 transition-colors" x-text="branch.Brnch_Name"></h3>
