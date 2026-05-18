@@ -13,7 +13,20 @@ $role = $_SESSION['role'];
 $data = json_decode(file_get_contents('php://input'), true);
 $action = $data['action'] ?? '';
 
+// Ensure database schema is updated with new columns
+function ensureSchemaUpdate($pdo) {
+    $columns = $pdo->query("SHOW COLUMNS FROM ADDRESS")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('Add_Brgy', $columns)) {
+        $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_Brgy VARCHAR(50) NOT NULL AFTER Add_City");
+    }
+    if (!in_array('Add_PostalCode', $columns)) {
+        $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_PostalCode VARCHAR(20) AFTER Add_Landmark");
+    }
+}
+
 try {
+    ensureSchemaUpdate($pdo);
+    
     if ($action === 'get_branches') {
         $stmt = $pdo->query("SELECT * FROM BRANCH WHERE Brnch_Status = 'Y'");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
@@ -43,6 +56,7 @@ try {
         $recipient_num = $data['num'];
         $payment_method = $data['payment_method'] ?? null;
         $manual_address = $data['address'] ?? null; // {province, city, street, brgy, landmark}
+        $address_id = $data['address_id'] ?? null;
 
         if (empty($items)) {
             echo json_encode(['success' => false, 'message' => 'Your tray is empty.']);
@@ -60,7 +74,7 @@ try {
                 exit;
             }
 
-            if (!$manual_address) {
+            if (!$manual_address && !$address_id) {
                 // Check if user has a valid existing address (not a dummy one)
                 $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ? AND Add_City != 'N/A' AND Add_Street NOT LIKE '%Branch Pickup%' LIMIT 1");
                 $stmt->execute([$user_id]);
@@ -69,7 +83,7 @@ try {
                     echo json_encode(['success' => false, 'message' => 'A valid delivery address is required. Please use manual entry if you haven\'t set one up.']);
                     exit;
                 }
-            } else {
+            } elseif ($manual_address) {
                 // Validate manual address fields
                 if (empty(trim($manual_address['street'])) || empty(trim($manual_address['city'])) || empty(trim($manual_address['brgy']))) {
                     echo json_encode(['success' => false, 'message' => 'Please provide a complete delivery address (Street, Barangay, and City).']);
@@ -95,13 +109,11 @@ try {
                 $manual_address['postal'] ?? '',
             ]);
             $address_id = $pdo->lastInsertId();
+        } elseif ($address_id) {
+            // Use provided address_id
         } else {
-            // For Delivery, use the same strict filter as validation
-            if ($type === 'Delivery') {
-                $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? AND Add_City != 'N/A' AND Add_Street NOT LIKE '%Branch Pickup%' ORDER BY Add_ID DESC LIMIT 1");
-            } else {
-                $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? ORDER BY Add_ID DESC LIMIT 1");
-            }
+            // For non-delivery or fallback, gets latest address
+            $stmt = $pdo->prepare("SELECT Add_ID FROM ADDRESS WHERE Add_Cust_ID = ? ORDER BY Add_ID DESC LIMIT 1");
             $stmt->execute([$user_id]);
             $addr = $stmt->fetch();
             
@@ -161,7 +173,15 @@ try {
             ORDER BY o.Order_ID DESC
         ");
         $stmt->execute([$user_id]);
-        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+        $orders = $stmt->fetchAll();
+        
+        foreach($orders as &$order) {
+            $stmtItems = $pdo->prepare("SELECT oi.*, m.Menu_Name FROM ORDER_ITEM oi JOIN MENU_ITEM m ON oi.OItem_Menu_ID = m.Menu_ID WHERE oi.Order_ID = ?");
+            $stmtItems->execute([$order['Order_ID']]);
+            $order['Order_Items'] = $stmtItems->fetchAll();
+        }
+        
+        echo json_encode(['success' => true, 'data' => $orders]);
     }
     elseif ($action === 'get_profile') {
         $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_Num FROM CUSTOMER WHERE Cust_ID = ?");
@@ -218,12 +238,6 @@ try {
             echo json_encode(['success' => false, 'message' => 'Label, Province, City, Barangay, and Street are required.']);
             exit;
         }
-
-        // Migration check: Ensure columns exist (for safety if user didn't re-run SQL)
-        try {
-            $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_Brgy VARCHAR(50) NOT NULL AFTER Add_City");
-            $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_PostalCode VARCHAR(10) AFTER Add_Landmark");
-        } catch (Exception $e) { /* already exists */ }
 
         $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Brgy, Add_Street, Add_UnitNum, Add_Building, Add_Landmark, Add_PostalCode, Add_Label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$user_id, $province, $city, $brgy, $street, $unit, $building, $landmark, $postal, $label]);

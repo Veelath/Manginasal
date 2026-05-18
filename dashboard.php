@@ -102,6 +102,8 @@ $user_id = $_SESSION['user_id'];
     tempProfile: { fname: '', lname: '', mobile: '' },
     newAddress: { label: 'Home', province: 'Metro Manila', city: '', brgy: '', street: '', unit: '', building: '', landmark: '', postal: '' },
     message: null,
+    showAddressPicker: false,
+    selectedAddressId: null,
 
     closeAllModals() {
         this.showBranchModal = false;
@@ -363,7 +365,8 @@ $user_id = $_SESSION['user_id'];
                     name: this.profileData ? `${this.profileData.fname} ${this.profileData.lname}` : 'Guest User',
                     num: this.profileData ? this.profileData.mobile : '09000000000',
                     payment_method: this.paymentMethod,
-                    address: {
+                    address_id: this.useCurrentAddress ? this.selectedAddressId : null,
+                    address: this.useCurrentAddress ? null : {
                         ...this.manualAddress,
                         city: this.manualAddress.city || 'Standard Entry',
                         brgy: this.manualAddress.brgy || 'Standard Entry',
@@ -1044,21 +1047,6 @@ $user_id = $_SESSION['user_id'];
                         <?php endif; ?>
                     </div>
                 </div>
-
-                <?php if ($role === 'Customer'): ?>
-                <div class="hidden lg:flex items-center gap-3 px-6 py-3 bg-white border border-slate-100 rounded-2xl shadow-sm cursor-pointer hover:border-green-100 transition-all">
-                    <div class="w-8 h-8 bg-green-50 text-[#006738] rounded-lg flex items-center justify-center">
-                        <i data-lucide="map-pin" class="w-4 h-4"></i>
-                    </div>
-                    <div class="text-left">
-                        <p class="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Delivering to</p>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-700" x-text="addresses[0] ? addresses[0].Add_Street + ', ' + addresses[0].Add_City : 'Select address...'"></span>
-                            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
             <div class="flex items-center gap-4">
                 <button class="p-2 bg-white rounded-xl shadow-sm border text-slate-400 hover:text-[#006738]">
@@ -2460,8 +2448,31 @@ $user_id = $_SESSION['user_id'];
                             
                             <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
                                 <div x-show="orderType === 'Delivery'" class="space-y-3">
-                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Delivery Address</p>
-                                    <div class="space-y-2">
+                                    <div class="flex justify-between items-center px-1">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address</p>
+                                        <template x-if="addresses.length > 0">
+                                            <button @click="showAddressPicker = !showAddressPicker" class="text-[10px] font-black text-[#006738] uppercase underline decoration-2 underline-offset-4">
+                                                <span x-text="showAddressPicker ? 'Manual Entry' : 'Choose Saved'"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <div x-show="showAddressPicker && addresses.length > 0" class="space-y-2">
+                                        <template x-for="addr in addresses" :key="addr.Add_ID">
+                                            <button @click="manualAddress = { street: addr.Add_Street, brgy: addr.Add_Brgy, city: addr.Add_City, landmark: addr.Add_Landmark, province: addr.Add_Province }; useCurrentAddress = true; selectedAddressId = addr.Add_ID; showAddressPicker = false"
+                                                    :class="(useCurrentAddress && selectedAddressId === addr.Add_ID) ? 'border-[#006738] bg-green-50' : 'border-slate-100 bg-slate-50'"
+                                                    class="w-full text-left p-4 rounded-2xl border-2 transition-all group">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <span class="text-[10px] font-black uppercase text-slate-400" x-text="addr.Add_Label"></span>
+                                                    <i x-show="useCurrentAddress && selectedAddressId === addr.Add_ID" data-lucide="check-circle-2" class="w-4 h-4 text-[#006738]"></i>
+                                                </div>
+                                                <p class="text-xs font-bold text-slate-700 truncate" x-text="addr.Add_Street"></p>
+                                                <p class="text-[10px] text-slate-400" x-text="`${addr.Add_Brgy}, ${addr.Add_City}`"></p>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <div class="space-y-2" x-show="!showAddressPicker || addresses.length === 0">
                                         <input type="text" x-model="manualAddress.street" placeholder="Street / House No." @input="useCurrentAddress = false"
                                                class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
                                         <div class="grid grid-cols-2 gap-2">
@@ -2719,6 +2730,35 @@ $user_id = $_SESSION['user_id'];
                                 <template x-if="!selectedOrder?.Rider_FName">
                                     <p class="text-xs text-slate-400 italic">Finding nearest rider...</p>
                                 </template>
+                            </div>
+                        </div>
+
+                        <!-- Receipt / Summary -->
+                        <div class="bg-white rounded-[2rem] border-4 border-slate-50 p-6 space-y-6">
+                            <div class="flex justify-between items-center px-1">
+                                <h4 class="text-sm font-black uppercase tracking-widest text-[#006738]">Order Summary</h4>
+                                <span class="bg-slate-100 text-slate-400 text-[10px] font-black px-2 py-0.5 rounded" x-text="selectedOrder?.Order_Stat"></span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <template x-if="selectedOrder && selectedOrder.Order_Items">
+                                    <div class="space-y-3">
+                                        <template x-for="item in selectedOrder.Order_Items" :key="item.OItem_ID">
+                                            <div class="flex justify-between items-center group">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-[10px] text-slate-400" x-text="item.OItem_Quantity"></div>
+                                                    <span class="font-bold text-slate-700 text-sm" x-text="item.Menu_Name"></span>
+                                                </div>
+                                                <span class="font-black text-slate-400 text-sm" x-text="'₱' + (parseFloat(item.OItem_Unit_Price) * item.OItem_Quantity).toFixed(0)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                
+                                <div class="pt-4 border-t-2 border-dashed border-slate-100 flex justify-between items-center">
+                                    <span class="text-xs font-black uppercase text-slate-400 tracking-widest">Total Paid</span>
+                                    <span class="text-2xl font-black text-[#ed1c24]" x-text="'₱' + (selectedOrder ? parseFloat(selectedOrder.Order_Total_Amount).toFixed(0) : '0')"></span>
+                                </div>
                             </div>
                         </div>
 
