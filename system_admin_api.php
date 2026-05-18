@@ -141,6 +141,27 @@ try {
         $stmt = $pdo->query("SELECT * FROM MENU_ITEM");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
+    elseif ($action === 'delete_menu') {
+        $id = $data['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID required.']);
+            exit;
+        }
+        $stmt = $pdo->prepare("DELETE FROM MENU_ITEM WHERE Menu_ID = ?");
+        $stmt->execute([$id]);
+        echo json_encode(['success' => true, 'message' => 'Menu item deleted!']);
+    }
+    elseif ($action === 'update_menu_status') {
+        $id = $data['id'] ?? null;
+        $status = $data['status'] ?? 'Y';
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID required.']);
+            exit;
+        }
+        $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Status = ? WHERE Menu_ID = ?");
+        $stmt->execute([$status, $id]);
+        echo json_encode(['success' => true, 'message' => 'Status updated!']);
+    }
     elseif ($action === 'get_branches') {
         $stmt = $pdo->query("
             SELECT b.*, m.Mgr_FName as fname, m.Mgr_LName as lname 

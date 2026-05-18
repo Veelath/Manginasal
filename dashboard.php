@@ -571,6 +571,26 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
+    async deleteMenu(id) {
+        if(!confirm('Are you sure you want to delete this global menu item?')) return;
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_menu', id })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) this.fetchMenu();
+    },
+
+    async updateMenuStatus(id, status) {
+        const res = await fetch('system_admin_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_menu_status', id, status })
+        });
+        const data = await res.json();
+        if(data.success) this.fetchMenu();
+    },
+
     async submitManager() {
         const res = await fetch('system_admin_api.php', {
             method: 'POST',
@@ -1549,12 +1569,13 @@ $user_id = $_SESSION['user_id'];
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Category</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Price</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-if="menuItems.length === 0">
                             <tr>
-                                <td colspan="4" class="p-12 text-center text-slate-400 italic">No menu items found. Click "Add Global Item" to start.</td>
+                                <td colspan="5" class="p-12 text-center text-slate-400 italic">No menu items found. Click "Add Global Item" to start.</td>
                             </tr>
                         </template>
                         <template x-for="item in menuItems" :key="item.Menu_ID">
@@ -1581,7 +1602,16 @@ $user_id = $_SESSION['user_id'];
                                 </td>
                                 <td class="p-4 text-sm font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></td>
                                 <td class="p-4">
-                                    <span class="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700">Active</span>
+                                    <button @click="updateMenuStatus(item.Menu_ID, item.Menu_Status === 'Y' ? 'N' : 'Y')"
+                                            :class="item.Menu_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                            class="text-[10px] font-black uppercase px-3 py-1 rounded-full transition-all hover:scale-105">
+                                        <span x-text="item.Menu_Status === 'Y' ? 'Active' : 'Unavailable'"></span>
+                                    </button>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <button @click="deleteMenu(item.Menu_ID)" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
                                 </td>
                             </tr>
                         </template>
@@ -1924,12 +1954,22 @@ $user_id = $_SESSION['user_id'];
                 <template x-for="item in menuItems" :key="item.Menu_ID">
                     <div :class="item.Is_Available === 'Y' ? 'border-green-100 bg-white' : 'border-red-100 bg-red-50/10 opacity-75'" class="p-6 rounded-3xl border-2 transition-all">
                         <div class="flex justify-between items-start mb-4">
-                            <span x-text="item.Menu_Category" class="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-1 rounded-lg"></span>
+                            <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center text-slate-300">
+                                <template x-if="item.Menu_Image">
+                                    <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!item.Menu_Image">
+                                    <i data-lucide="utensils" class="w-5 h-5"></i>
+                                </template>
+                            </div>
                             <button @click="toggleAvailability(item.Menu_ID, item.Is_Available)" 
                                     :class="item.Is_Available === 'Y' ? 'bg-[#006738]' : 'bg-red-500'" 
                                     class="w-12 h-6 rounded-full relative transition-colors">
                                 <div :class="item.Is_Available === 'Y' ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
                             </button>
+                        </div>
+                        <div class="mb-4">
+                             <span x-text="item.Menu_Category" class="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-1 rounded-lg"></span>
                         </div>
                         <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
                         <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
@@ -2143,8 +2183,13 @@ $user_id = $_SESSION['user_id'];
                         <div class="space-y-4 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                             <template x-for="(item, index) in cart" :key="index">
                                 <div class="group flex gap-4 bg-slate-50/50 p-4 rounded-3xl border border-slate-50 hover:bg-white hover:shadow-md transition-all">
-                                    <div class="w-16 h-16 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center text-slate-300">
-                                        <i data-lucide="utensils" class="w-6 h-6"></i>
+                                    <div class="w-16 h-16 bg-white rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center text-slate-300">
+                                        <template x-if="item.Menu_Image">
+                                            <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!item.Menu_Image">
+                                            <i data-lucide="utensils" class="w-6 h-6 text-slate-300"></i>
+                                        </template>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-black text-slate-800 truncate" x-text="item.Menu_Name"></p>
