@@ -317,16 +317,8 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
                 <!-- Social Icons matching screenshot style -->
-                <div class="flex items-center gap-3">
-                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
-                        <i data-lucide="facebook" class="w-5 h-5 fill-current"></i>
-                    </a>
-                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
-                        <i data-lucide="instagram" class="w-5 h-5"></i>
-                    </a>
-                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
-                        <i data-lucide="youtube" class="w-5 h-5 fill-current"></i>
-                    </a>
+                <div class="flex items-center">
+                    <img src="socials.png" class="h-10 w-auto cursor-pointer" alt="Social Media Links">
                 </div>
             </div>
         </div>
