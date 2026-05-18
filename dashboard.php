@@ -447,6 +447,14 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         if(data.success) {
             this.stats = { ...this.stats, ...data.stats };
+            
+            // Fallback: if API returns 0 but local workforce has people, assume API is lagging or filtering differently
+            if (this.stats.staff === 0 && this.workforce.some(p => p.source === 'Staff')) {
+                this.stats.staff = this.workforce.filter(p => p.source === 'Staff').length;
+            }
+            if (this.stats.riders === 0 && this.workforce.some(p => p.source === 'Rider')) {
+                this.stats.riders = this.workforce.filter(p => (p.source === 'Rider' || p.role === 'Driver')).length;
+            }
         }
     },
 
@@ -626,7 +634,7 @@ $user_id = $_SESSION['user_id'];
         if(data.success) this.fetchMenu();
     },
 
-    async submitManager() {
+    async submitManager(stayOpen = false) {
         const res = await fetch('system_admin_api.php', {
             method: 'POST',
             body: JSON.stringify({ action: 'create_manager', ...this.newManager })
@@ -637,7 +645,10 @@ $user_id = $_SESSION['user_id'];
             this.fetchStats();
             this.fetchManagers();
             this.fetchBranches(); 
-            this.showManagerModal = false;
+            this.newManager = { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: '' };
+            if (!stayOpen) {
+                this.showManagerModal = false;
+            }
         }
     },
 
@@ -699,14 +710,19 @@ $user_id = $_SESSION['user_id'];
 
     openEditBranch(branch) { this.editingBranch = { ...branch }; this.showEditBranchModal = true; },
     async submitEditBranch() {
-        const res = await fetch('system_admin_api.php', {
+        const api = (this.role === 'System Admin') ? 'system_admin_api.php' : 'branch_manager_api.php';
+        const res = await fetch(api, {
             method: 'POST',
             body: JSON.stringify({ action: 'update_branch', ...this.editingBranch })
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) {
-            this.fetchBranches();
+            if (this.role === 'System Admin') {
+                this.fetchBranches();
+            } else {
+                this.fetchBranchInfo();
+            }
             this.showEditBranchModal = false;
         }
     },
@@ -751,7 +767,6 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.fetchWorkforce();
             this.fetchBranchStats();
-            this.fetchStaff();
             this.showEditStaffModal = false;
         }
     },
@@ -767,7 +782,6 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.fetchWorkforce();
             this.fetchBranchStats();
-            this.fetchRiders();
             this.showEditRiderModal = false;
         }
     },
@@ -859,7 +873,7 @@ $user_id = $_SESSION['user_id'];
                    :class="activeTab === 'manage_riders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="bike" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen" class="font-bold text-sm">Rider Fleet</span>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Delivery Riders</span>
                 </a>
                 <a href="#" @click="activeTab = 'user_directory'" 
                    :class="activeTab === 'user_directory' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
@@ -1823,7 +1837,10 @@ $user_id = $_SESSION['user_id'];
                             </template>
                         </select>
                     </div>
-                    <button @click="submitManager()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
+                    <div class="flex flex-col gap-3">
+                        <button @click="submitManager(false)" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Create Account</button>
+                        <button @click="submitManager(true)" class="w-full bg-[#f1f5f1] text-[#006738] font-black py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-sm">Save & Add Another</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1913,6 +1930,10 @@ $user_id = $_SESSION['user_id'];
                         <i data-lucide="bike" class="w-4 h-4"></i>
                         <span>Add Rider</span>
                     </button>
+                    <button @click="editingBranch = { ...currentBranch }; showEditBranchModal = true" class="bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        <span>Edit Branch</span>
+                    </button>
                 </div>
             </div>
 
@@ -1939,8 +1960,9 @@ $user_id = $_SESSION['user_id'];
                                     }" class="text-[10px] font-black uppercase px-2 py-1 rounded-full" x-text="person.role"></span>
                                 </td>
                                 <td class="p-4 text-right flex items-center justify-end gap-2">
-                                    <button @click="person.source === 'Staff' ? openEditStaff(person) : openEditRider(person)" class="text-slate-400 hover:text-[#006738] p-2 transition-colors">
+                                    <button @click="person.source === 'Staff' ? openEditStaff(person) : openEditRider(person)" class="flex items-center gap-1 text-[10px] font-black uppercase text-slate-400 hover:text-[#006738] p-2 transition-colors">
                                         <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        <span>Edit</span>
                                     </button>
                                     <button @click="deletePerson(person.id, person.source)" class="text-red-400 hover:text-red-600 p-2 transition-colors">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>

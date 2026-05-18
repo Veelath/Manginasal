@@ -125,12 +125,15 @@ try {
         // Staff count
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM STAFF WHERE Staff_Brnch_ID = ?");
         $stmt->execute([$branch_id]);
-        $staff_count = $stmt->fetchColumn();
+        $staff_count = (int)$stmt->fetchColumn();
 
         // Rider count
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM RIDER WHERE Rider_Brnch_ID = ?");
         $stmt->execute([$branch_id]);
-        $rider_count = $stmt->fetchColumn();
+        $rider_count = (int)$stmt->fetchColumn();
+
+        // Extra sanity check: count from workforce directly if above is weird
+        // (Just kidding, integers should be enough).
 
         // Daily Sales
         $stmt = $pdo->prepare("SELECT SUM(Order_Total_Amount) FROM orders WHERE Order_Brnch_ID = ? AND DATE(Order_Date) = CURDATE() AND Order_Stat = 'Completed'");
@@ -165,6 +168,19 @@ try {
         $stmt->execute([$branch_id]);
         $branch = $stmt->fetch();
         echo json_encode(['success' => true, 'branch' => $branch]);
+    }
+    elseif ($action === 'update_branch') {
+        $name = $data['Brnch_Name'] ?? '';
+        $street = $data['Brnch_Street'] ?? '';
+        $brgy = $data['Brnch_Brgy'] ?? '';
+        $city = $data['Brnch_City'] ?? '';
+        $province = $data['Brnch_Province'] ?? '';
+        $radius = $data['Brnch_Radius'] ?? 5;
+        $id = $data['Brnch_ID'] ?? $branch_id;
+
+        $stmt = $pdo->prepare("UPDATE BRANCH SET Brnch_Name = ?, Brnch_Street = ?, Brnch_Brgy = ?, Brnch_City = ?, Brnch_Province = ?, Brnch_Radius = ? WHERE Brnch_ID = ?");
+        $stmt->execute([$name, $street, $brgy, $city, $province, $radius, $id]);
+        echo json_encode(['success' => true, 'message' => 'Branch details updated!']);
     }
     elseif ($action === 'get_orders') {
         $stmt = $pdo->prepare("
