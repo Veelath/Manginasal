@@ -123,10 +123,14 @@ try {
             exit;
         }
 
-        // Ensure image column exists
+        // Ensure image column exists and has enough capacity for base64
         try {
-            $pdo->exec("ALTER TABLE MENU_ITEM ADD COLUMN Menu_Image VARCHAR(255) AFTER Menu_Description");
-        } catch (Exception $e) { /* already exists */ }
+            $pdo->exec("ALTER TABLE MENU_ITEM MODIFY COLUMN Menu_Image LONGTEXT");
+        } catch (Exception $e) {
+            try {
+                $pdo->exec("ALTER TABLE MENU_ITEM ADD COLUMN Menu_Image LONGTEXT AFTER Menu_Description");
+            } catch (Exception $e2) { /* already exists and handled */ }
+        }
 
         $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size, Menu_Image) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([$name, $desc, $price, $cat, $size, $image]);

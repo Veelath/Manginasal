@@ -190,6 +190,16 @@
                     </div>
                 </template>
 
+                <!-- Carousel Controls -->
+                <button @click="currentSlide = (currentSlide - 1 + slides.length) % slides.length" 
+                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 z-20">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <button @click="currentSlide = (currentSlide + 1) % slides.length" 
+                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 z-20">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+
                 <!-- Carousel Indicators -->
                 <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
                     <template x-for="(slide, index) in slides" :key="'ind'+index">
@@ -366,9 +376,6 @@
                     }
                 ],
                 init() {
-                    setInterval(() => {
-                        this.currentSlide = (this.currentSlide + 1) % this.slides.length;
-                    }, 5000);
                     lucide.createIcons();
                 },
                 toggleAuth() {

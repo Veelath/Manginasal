@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS MENU_ITEM (
     Menu_Name VARCHAR(50) NOT NULL,
     Menu_Size VARCHAR(20) DEFAULT 'Standard',
     Menu_Description VARCHAR(200),
-    Menu_Image VARCHAR(255),
+    Menu_Image LONGTEXT,
     Menu_Price DECIMAL(8,2) NOT NULL,
     Menu_Status CHAR(1) DEFAULT 'Y'
 );
