@@ -63,7 +63,7 @@ $user_id = $_SESSION['user_id'];
     showBranchModal: false,
     currentCarousel: 0,
     carouselItems: [
-        { title: 'Juicy & Lami na Grilled Chicken!', subtitle: 'HULING LASAP!', image: 'hero-1.jpg', color: '#006738' },
+        { title: 'Juicy & Lami na Grilled Chicken!', subtitle: 'HULING LASAP!', image: 'must-try.jpg', color: '#006738' },
         { title: 'Experience Authentic Pinoy Flavors!', subtitle: 'UNLI-RICE EXPERIENCE', image: 'hero2.jpg', color: '#ffec00' },
         { title: 'Share the Joy with Fiesta Meals!', subtitle: 'SHARE THE GRILL', image: 'hero3.jpg', color: '#006738' }
     ],
