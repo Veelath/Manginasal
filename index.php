@@ -267,26 +267,15 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12 sm:gap-20">
                     <div class="flex-1 space-y-6 sm:space-y-10 z-10">
                         <h2 class="text-3xl sm:text-6xl font-black text-slate-800 font-poppins leading-[1.1] tracking-tight">Order Mang Inasal online for delivery or pick-up!</h2>
-                        <p class="text-slate-700 text-lg sm:text-2xl font-bold leading-relaxed">Enjoy unli-sulit at unli-saya with the all-new Mang Inasal app. It makes ordering for delivery or pick-up super easy, plus you get access to exclusive promos! <br> <span class="font-black text-slate-800">Download the app now.</span></p>
+                        <p class="text-slate-700 text-lg sm:text-2xl font-bold leading-relaxed max-w-2xl">Enjoy unli-sulit at unli-saya with the all-new Mang Inasal app. It makes ordering for delivery or pick-up super easy, plus you get access to exclusive promos! <br> <span class="font-black text-slate-800">Download the app now.</span></p>
                         <div class="flex flex-wrap items-center gap-4 pt-4 shrink-0">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform" alt="App Store">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 sm:h-14 cursor-pointer hover:scale-105 transition-transform" alt="Google Play">
                         </div>
                     </div>
-                    <div class="flex-1 relative z-10 px-8 sm:px-0">
-                        <div class="relative w-full max-w-[400px] mx-auto bg-slate-800 rounded-[3rem] p-4 shadow-2xl border-8 border-slate-700">
-                             <div class="bg-white rounded-[2.5rem] overflow-hidden aspect-[9/19]">
-                                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-50 grayscale">
-                                <div class="absolute inset-0 flex flex-col items-center justify-center p-8 bg-[#006738]/80 text-center">
-                                    <div class="inline-block bg-[#ffec00] p-4 border-[4px] border-black rounded-sm shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-8 scale-75">
-                                        <div class="text-black font-poppins font-black leading-none tracking-tighter">
-                                            <span class="block text-sm uppercase italic text-black">Mang</span>
-                                            <span class="block text-4xl uppercase text-[#ed1c24] -mt-1">Inasal</span>
-                                        </div>
-                                    </div>
-                                    <p class="text-white text-xl font-black uppercase tracking-widest leading-tight italic">Get your ihaw-sarap faves in just a few taps</p>
-                                </div>
-                             </div>
+                    <div class="flex-1 relative z-10 px-8 sm:px-0 flex justify-center">
+                        <div class="relative w-full max-w-[500px]">
+                             <img src="phone-promo.jpg" class="w-full h-auto drop-shadow-2xl" alt="App Preview">
                         </div>
                     </div>
                 </div>
@@ -299,51 +288,47 @@
     <!-- Footer -->
     <footer class="bg-[#006738] pt-12 pb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-4">
-                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">About Us</a>
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">FAQs</a>
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Contact Us</a>
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Corporate Information</a>
-                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Privacy Notice</a>
-                </div>
-                <div class="flex items-center gap-4 shrink-0">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 cursor-pointer rounded-lg">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 cursor-pointer rounded-lg">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-4">
+                <!-- Footer Links -->
+                <nav class="flex flex-wrap items-center gap-x-6 gap-y-3 font-black uppercase tracking-widest text-[10px] sm:text-xs">
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">About Us</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">FAQs</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Contact Us</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Corporate Information</a>
+                    <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
+                </nav>
+                <!-- Store Badges in Footer -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="Google Play">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="App Store">
                 </div>
             </div>
 
-            <p class="text-white text-[11px] font-medium mb-8">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+            <div class="mt-4 mb-8">
+                <p class="text-white text-[11px] font-medium opacity-90">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+            </div>
             
+            <!-- White Line separator -->
             <div class="h-px bg-white/20 w-full mb-8"></div>
 
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                <p class="text-white text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
-                <div class="flex items-center gap-4">
-                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                        <i data-lucide="facebook" class="w-4 h-4 fill-current"></i>
+                <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
+                <!-- Social Icons matching screenshot style -->
+                <div class="flex items-center gap-3">
+                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                        <i data-lucide="facebook" class="w-5 h-5"></i>
                     </a>
-                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                        <i data-lucide="instagram" class="w-4 h-4"></i>
+                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                        <i data-lucide="instagram" class="w-5 h-5"></i>
                     </a>
-                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                        <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                        <i data-lucide="youtube" class="w-5 h-5"></i>
                     </a>
                 </div>
             </div>
         </div>
     </footer>
-
-    <!-- Floating Chat Avatar -->
-    <div class="fixed bottom-6 right-6 z-[300] group cursor-pointer">
-        <div class="relative">
-            <div class="w-16 h-16 rounded-full overflow-hidden border-4 border-white shadow-2xl transition-transform group-hover:scale-110">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=InasalHelper" class="w-full h-full bg-[#ffec00]" alt="Assistance">
-            </div>
-            <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-        </div>
-    </div>
 
     <script>
         function authApp() {

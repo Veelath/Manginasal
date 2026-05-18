@@ -2786,36 +2786,42 @@ $user_id = $_SESSION['user_id'];
         <!-- Footer -->
         <footer class="bg-[#006738] -mx-4 sm:-mx-6 lg:-mx-8 mt-12 pt-12 pb-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-4">
-                    <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">About Us</a>
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">FAQs</a>
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Contact Us</a>
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Corporate Information</a>
-                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Privacy Notice</a>
-                    </div>
-                    <div class="flex items-center gap-4 shrink-0">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 cursor-pointer rounded-lg">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 cursor-pointer rounded-lg">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-4">
+                    <!-- Footer Links -->
+                    <nav class="flex flex-wrap items-center gap-x-6 gap-y-3 font-black uppercase tracking-widest text-[10px] sm:text-xs">
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">About Us</a>
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">FAQs</a>
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Contact Us</a>
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Corporate Information</a>
+                        <a href="#" class="text-white hover:text-[#ffec00] transition-colors">Privacy Notice</a>
+                    </nav>
+                    <!-- Store Badges in Footer -->
+                    <div class="flex items-center gap-3 shrink-0">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="Google Play">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-9 sm:h-10 cursor-pointer rounded-lg hover:scale-105 transition-transform" alt="App Store">
                     </div>
                 </div>
 
-                <p class="text-white text-[11px] font-medium mb-8">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+                <div class="mt-4 mb-8">
+                    <p class="text-white text-[11px] font-medium opacity-90">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+                </div>
                 
+                <!-- White Line separator -->
                 <div class="h-px bg-white/20 w-full mb-8"></div>
 
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p class="text-white text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
-                    <div class="flex items-center gap-4">
-                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                            <i data-lucide="facebook" class="w-4 h-4 fill-current"></i>
+                    <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
+                    <!-- Social Icons matching screenshot style -->
+                    <div class="flex items-center gap-3">
+                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                            <i data-lucide="facebook" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                            <i data-lucide="instagram" class="w-4 h-4"></i>
+                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
-                            <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                            <i data-lucide="youtube" class="w-5 h-5"></i>
                         </a>
                     </div>
                 </div>
