@@ -37,12 +37,7 @@
                         </div>
                     </div>
 
-                    <!-- Location Selector -->
-                    <div class="hidden sm:flex items-center gap-2 text-slate-600 hover:text-[#006738] cursor-pointer group">
-                        <i data-lucide="map-pin" class="w-4 h-4"></i>
-                        <span class="text-xs font-bold uppercase tracking-widest">Select your address</span>
-                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform group-hover:translate-y-0.5"></i>
-                    </div>
+    
                 </div>
 
                 <div class="flex items-center gap-2 sm:gap-4">
