@@ -326,7 +326,7 @@ $user_id = $_SESSION['user_id'];
         if (!this.cart || this.cart.length === 0) return false;
         if (this.orderType === 'Delivery') {
             if (this.cartTotal < 200) return false;
-            if (!this.manualAddress.street || this.manualAddress.street.trim().length < 5) return false;
+            if (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city) return false;
         }
         if (!this.paymentMethod) return false;
         return true;
@@ -2459,12 +2459,20 @@ $user_id = $_SESSION['user_id'];
                             </div>
                             
                             <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
-                                <div x-show="orderType === 'Delivery'">
-                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Delivery Address</p>
-                                    <textarea x-model="manualAddress.street" 
-                                              placeholder="Street, Barangay, City, Landmark..." 
-                                              class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all resize-none h-20"
-                                              @input="useCurrentAddress = false"></textarea>
+                                <div x-show="orderType === 'Delivery'" class="space-y-3">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Delivery Address</p>
+                                    <div class="space-y-2">
+                                        <input type="text" x-model="manualAddress.street" placeholder="Street / House No." @input="useCurrentAddress = false"
+                                               class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <input type="text" x-model="manualAddress.brgy" placeholder="Barangay" @input="useCurrentAddress = false"
+                                                   class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                            <input type="text" x-model="manualAddress.city" placeholder="City" @input="useCurrentAddress = false"
+                                                   class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                        </div>
+                                        <input type="text" x-model="manualAddress.landmark" placeholder="Landmark (Optional)" @input="useCurrentAddress = false"
+                                               class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                    </div>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <div>
@@ -2646,32 +2654,42 @@ $user_id = $_SESSION['user_id'];
                     <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-[#006738] text-white">
                         <div>
                             <h3 class="font-black text-xl font-poppins capitalize" x-text="'Tracking #' + (selectedOrder ? selectedOrder.Order_Code : '')"></h3>
-                            <p class="text-xs font-bold text-white/70">Estimated Arrival: <span x-text="selectedOrder && selectedOrder.Dlvry_Current_ETA ? new Date(selectedOrder.Dlvry_Current_ETA).toLocaleTimeString() : 'N/A'"></span></p>
+                            <p class="text-xs font-bold text-white/70">Estimated Arrival: <span x-text="selectedOrder && selectedOrder.Dlvry_Current_ETA ? new Date(selectedOrder.Dlvry_Current_ETA).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'"></span></p>
                         </div>
                         <button @click="showTrackingModal = false" class="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
                     </div>
                     
-                    <div class="p-8 space-y-8">
-                        <!-- Tracking Status -->
-                        <div class="relative flex justify-between">
-                            <div class="absolute top-5 left-0 right-0 h-1 bg-slate-100 z-0">
-                                <div class="h-full bg-[#006738] transition-all duration-500" :style="{
-                                    width: selectedOrder?.Order_Stat === 'Pending' ? '0%' :
-                                           selectedOrder?.Order_Stat === 'Preparing' ? '25%' :
-                                           selectedOrder?.Order_Stat === 'Ready' ? '50%' :
-                                           selectedOrder?.Order_Stat === 'Delivering' ? '75%' : '100%'
-                                }"></div>
-                            </div>
-                            <template x-for="step in ['Pending', 'Preparing', 'Ready', 'Delivering', 'Completed']">
-                                <div class="relative z-10 flex flex-col items-center gap-2">
-                                    <div :class="selectedOrder?.Order_Stat === step || (['Preparing', 'Ready', 'Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Pending') || (['Ready', 'Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Preparing') || (['Delivering', 'Completed'].includes(selectedOrder?.Order_Stat) && step === 'Ready') || (selectedOrder?.Order_Stat === 'Completed' && step === 'Delivering') ? 'bg-[#006738] text-white' : 'bg-white text-slate-300 border-2 border-slate-100'"
-                                         class="w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all">
-                                        <i x-show="selectedOrder?.Order_Stat === step" data-lucide="check" class="w-4 h-4"></i>
-                                        <span x-show="selectedOrder?.Order_Stat !== step" x-text="step[0]"></span>
-                                    </div>
-                                    <span class="text-[8px] font-black uppercase text-slate-400" x-text="step"></span>
+                    <div class="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <!-- Enhanced Status Visualization -->
+                        <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                             <div class="flex items-center gap-4 mb-6">
+                                <div class="w-14 h-14 bg-[#ffec00] rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                                    <i :data-lucide="selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? 'bike' : 'timer'" class="w-7 h-7 text-black"></i>
                                 </div>
-                            </template>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</p>
+                                    <p class="text-xl font-black text-slate-800 font-poppins" x-text="selectedOrder?.Order_Stat"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-[#006738] transition-all duration-1000" 
+                                         :style="`width: ${
+                                            selectedOrder && selectedOrder.Order_Stat === 'Pending' ? '20%' : 
+                                            selectedOrder && selectedOrder.Order_Stat === 'Preparing' ? '40%' :
+                                            selectedOrder && selectedOrder.Order_Stat === 'Ready' ? '60%' :
+                                            selectedOrder && selectedOrder.Order_Stat === 'Delivering' ? '80%' :
+                                            selectedOrder && selectedOrder.Order_Stat === 'Completed' ? '100%' : '0%'
+                                         }`"></div>
+                                </div>
+                                <div class="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
+                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Pending' ? 'text-[#006738]' : ''">Placed</span>
+                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Preparing' ? 'text-[#006738]' : ''">Kitchen</span>
+                                    <span :class="selectedOrder && selectedOrder.Order_Stat === 'Ready' ? 'text-[#006738]' : ''">Ready</span>
+                                    <span :class="selectedOrder && ['Delivering', 'Completed'].includes(selectedOrder.Order_Stat) ? 'text-[#006738]' : ''">Out</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Info Grid -->
