@@ -2448,31 +2448,9 @@ $user_id = $_SESSION['user_id'];
                             
                             <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
                                 <div x-show="orderType === 'Delivery'" class="space-y-3">
-                                    <div class="flex justify-between items-center px-1">
-                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address</p>
-                                        <template x-if="addresses.length > 0">
-                                            <button @click="showAddressPicker = !showAddressPicker" class="text-[10px] font-black text-[#006738] uppercase underline decoration-2 underline-offset-4">
-                                                <span x-text="showAddressPicker ? 'Manual Entry' : 'Choose Saved'"></span>
-                                            </button>
-                                        </template>
-                                    </div>
-
-                                    <div x-show="showAddressPicker && addresses.length > 0" class="space-y-2">
-                                        <template x-for="addr in addresses" :key="addr.Add_ID">
-                                            <button @click="manualAddress = { street: addr.Add_Street, brgy: addr.Add_Brgy, city: addr.Add_City, landmark: addr.Add_Landmark, province: addr.Add_Province }; useCurrentAddress = true; selectedAddressId = addr.Add_ID; showAddressPicker = false"
-                                                    :class="(useCurrentAddress && selectedAddressId === addr.Add_ID) ? 'border-[#006738] bg-green-50' : 'border-slate-100 bg-slate-50'"
-                                                    class="w-full text-left p-4 rounded-2xl border-2 transition-all group">
-                                                <div class="flex items-center justify-between mb-1">
-                                                    <span class="text-[10px] font-black uppercase text-slate-400" x-text="addr.Add_Label"></span>
-                                                    <i x-show="useCurrentAddress && selectedAddressId === addr.Add_ID" data-lucide="check-circle-2" class="w-4 h-4 text-[#006738]"></i>
-                                                </div>
-                                                <p class="text-xs font-bold text-slate-700 truncate" x-text="addr.Add_Street"></p>
-                                                <p class="text-[10px] text-slate-400" x-text="`${addr.Add_Brgy}, ${addr.Add_City}`"></p>
-                                            </button>
-                                        </template>
-                                    </div>
-
-                                    <div class="space-y-2" x-show="!showAddressPicker || addresses.length === 0">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Delivery Address</p>
+                                    
+                                    <div class="space-y-2">
                                         <input type="text" x-model="manualAddress.street" placeholder="Street / House No." @input="useCurrentAddress = false"
                                                class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
                                         <div class="grid grid-cols-2 gap-2">
@@ -2827,46 +2805,6 @@ $user_id = $_SESSION['user_id'];
                             <label class="text-[10px] font-black uppercase text-slate-400 ml-1 mb-1 block">Mobile Number</label>
                             <div class="bg-slate-50 p-4 rounded-2xl font-bold text-slate-600 text-sm" x-text="profileData.mobile"></div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Addresses -->
-                <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm transition-all h-fit">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-black text-slate-800 text-xl font-poppins flex items-center gap-2">
-                            <i data-lucide="map-pinned" class="w-5 h-5 text-[#006738]"></i> Saved Addresses
-                        </h3>
-                        <button @click="showAddressModal = true" class="text-[10px] font-black uppercase bg-green-50 text-[#006738] px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
-                            + Add New
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <template x-for="addr in addresses" :key="addr.Add_ID">
-                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-start group">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-[10px] font-black uppercase bg-[#006738] text-white px-2 py-0.5 rounded shadow-sm" x-text="addr.Add_Label"></span>
-                                    </div>
-                                    <p class="text-sm font-bold text-slate-700 leading-tight" x-text="`${addr.Add_Street}, ${addr.Add_Brgy || ''}`"></p>
-                                    <p class="text-xs text-slate-500 mt-1" x-text="`${addr.Add_City}, ${addr.Add_Province} ${addr.Add_PostalCode || ''}`"></p>
-                                    <p x-show="addr.Add_Building || addr.Add_UnitNum" class="text-[10px] text-slate-400 mt-1" x-text="`${addr.Add_UnitNum || ''} ${addr.Add_Building || ''}`"></p>
-                                    <div x-show="addr.Add_Landmark" class="mt-2 flex items-center gap-1 text-[10px] text-orange-500 italic">
-                                        <i data-lucide="map-pin" class="w-3 h-3"></i>
-                                        <span x-text="addr.Add_Landmark"></span>
-                                    </div>
-                                </div>
-                                <button @click="deleteAddress(addr.Add_ID)" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </template>
-                        <template x-if="addresses.length === 0">
-                            <div class="py-12 text-center text-slate-400 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100">
-                                <i data-lucide="map" class="w-8 h-8 mx-auto mb-2 opacity-20"></i>
-                                <p class="italic text-sm">No saved addresses yet.</p>
-                            </div>
-                        </template>
                     </div>
                 </div>
             </div>
