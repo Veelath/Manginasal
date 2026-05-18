@@ -63,13 +63,13 @@ $user_id = $_SESSION['user_id'];
     showBranchModal: false,
     currentCarousel: 0,
     carouselItems: [
-        { title: 'Juicy & Lami na Grilled Chicken!', subtitle: 'HULING LASAP!', image: 'must-try.jpg', color: '#006738' },
+        { title: 'Juicy & Lami na Grilled Chicken!', subtitle: 'HULING LASAP!', image: 'hero1.jpg', color: '#006738' },
         { title: 'Experience Authentic Pinoy Flavors!', subtitle: 'UNLI-RICE EXPERIENCE', image: 'hero2.jpg', color: '#ffec00' },
         { title: 'Share the Joy with Fiesta Meals!', subtitle: 'SHARE THE GRILL', image: 'hero3.jpg', color: '#006738' }
     ],
     categories: [
         { name: 'Must Try!', icon: 'star', image: 'must-try.jpg', db: 'Chicken' },
-        { name: 'Chicken Inasal', icon: 'flame', image: 'must-try.jpg', db: 'Chicken' },
+        { name: 'Chicken Inasal', icon: 'flame', image: 'hero1.jpg', db: 'Chicken' },
         { name: 'Pork BBQ', icon: 'drumstick', image: 'pork.jpg', db: 'Pork' },
         { name: 'Family Fiesta', icon: 'users', image: 'fiesta.jpg', db: 'Family Fiesta' },
         { name: 'Buddy Fiesta', icon: 'user-2', image: 'fiesta.jpg', db: 'Buddy Fiesta' },
