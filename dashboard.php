@@ -326,14 +326,7 @@ $user_id = $_SESSION['user_id'];
         if (!this.cart || this.cart.length === 0) return false;
         if (this.orderType === 'Delivery') {
             if (this.cartTotal < 200) return false;
-            if (!this.useCurrentAddress) {
-                if (!this.manualAddress.street || !this.manualAddress.brgy || !this.manualAddress.city) return false;
-            } else {
-                if (!this.addresses || this.addresses.length === 0) return false;
-                // Double check if the current address is not a dummy one
-                const current = this.addresses[0];
-                if (!current || current.Add_City === 'N/A' || current.Add_Street.includes('Branch Pickup')) return false;
-            }
+            if (!this.manualAddress.street || this.manualAddress.street.trim().length < 5) return false;
         }
         if (!this.paymentMethod) return false;
         return true;
@@ -370,7 +363,12 @@ $user_id = $_SESSION['user_id'];
                     name: this.profileData ? `${this.profileData.fname} ${this.profileData.lname}` : 'Guest User',
                     num: this.profileData ? this.profileData.mobile : '09000000000',
                     payment_method: this.paymentMethod,
-                    address: this.useCurrentAddress ? null : this.manualAddress
+                    address: {
+                        ...this.manualAddress,
+                        city: this.manualAddress.city || 'Standard Entry',
+                        brgy: this.manualAddress.brgy || 'Standard Entry',
+                        province: this.manualAddress.province || 'Metro Manila'
+                    }
                 })
             });
             const data = await res.json();
@@ -378,7 +376,15 @@ $user_id = $_SESSION['user_id'];
             if(data.success) {
                 this.cart = [];
                 this.activeTab = 'customer_orders';
-                this.fetchCustomerOrders();
+                this.showCartTray = false; // Close tray on success
+                await this.fetchCustomerOrders();
+                
+                // Show tracking modal for the new order
+                if (this.customerOrders.length > 0) {
+                    this.selectedOrder = this.customerOrders[0];
+                    this.showTrackingModal = true;
+                }
+
                 // Reset order state for next time
                 this.paymentMethod = '';
                 this.manualAddress = { province: 'Metro Manila', city: '', street: '', brgy: '', landmark: '' };
@@ -991,12 +997,6 @@ $user_id = $_SESSION['user_id'];
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="utensils" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">Order Now</span>
-                </a>
-                <a href="#" @click="activeTab = 'promos'" 
-                   :class="activeTab === 'promos' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
-                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
-                    <i data-lucide="tag" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen" class="font-bold text-sm">Promos</span>
                 </a>
                 <a href="#" @click="activeTab = 'customer_orders'" 
                    :class="activeTab === 'customer_orders' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
@@ -2459,15 +2459,12 @@ $user_id = $_SESSION['user_id'];
                             </div>
                             
                             <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
-                                <div class="flex justify-between items-center" x-show="orderType === 'Delivery'">
-                                    <div>
-                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Delivering To</p>
-                                        <p class="text-xs font-black text-slate-700 max-w-[200px] truncate" x-text="addresses[0] && useCurrentAddress ? addresses[0].Add_Street : (manualAddress.street || 'Set Address')"></p>
-                                    </div>
-                                    <button @click="useCurrentAddress = !useCurrentAddress; if(!useCurrentAddress && !addresses.length) showCartTray = false; activeTab = 'customer_orders'" 
-                                            class="p-3 bg-slate-50 rounded-xl text-[#006738]">
-                                        <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                    </button>
+                                <div x-show="orderType === 'Delivery'">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Delivery Address</p>
+                                    <textarea x-model="manualAddress.street" 
+                                              placeholder="Street, Barangay, City, Landmark..." 
+                                              class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all resize-none h-20"
+                                              @input="useCurrentAddress = false"></textarea>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <div>
@@ -2503,73 +2500,89 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </div>
 
-            <!-- Menu Options Modal (Dynamic Pricing) -->
-            <div x-show="showMenuOptionsModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" x-cloak x-transition>
-                <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                    <div class="relative h-64 bg-slate-100">
+            <!-- Menu Options Modal (Dynamic Pricing) - Slide Tray -->
+            <div x-show="showMenuOptionsModal" class="fixed inset-0 z-[70]" x-cloak>
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showMenuOptionsModal = false; selectedMenuItemForOptions = null"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl overflow-hidden flex flex-col"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="translate-x-full"
+                     x-transition:enter-end="translate-x-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="translate-x-0"
+                     x-transition:leave-end="translate-x-full">
+                    
+                    <div class="relative h-72 bg-slate-100 overflow-hidden">
                         <template x-if="selectedMenuItemForOptions?.Menu_Image">
                             <img :src="selectedMenuItemForOptions.Menu_Image" class="w-full h-full object-cover">
                         </template>
-                        <div class="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-white via-white/80 to-transparent">
-                            <h3 class="text-3xl font-black text-slate-800 font-poppins" x-text="selectedMenuItemForOptions?.Menu_Name"></h3>
-                            <p class="text-slate-500 text-sm italic" x-text="selectedMenuItemForOptions?.Menu_Description"></p>
-                        </div>
-                        <button @click="showMenuOptionsModal = false; selectedMenuItemForOptions = null" class="absolute top-6 right-6 w-12 h-12 bg-black/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-black/40 transition-all">
-                            <i data-lucide="x" class="w-6 h-6"></i>
+                        <template x-if="!selectedMenuItemForOptions?.Menu_Image">
+                             <div class="w-full h-full flex items-center justify-center bg-slate-50">
+                                <i data-lucide="utensils" class="w-20 h-20 text-slate-200"></i>
+                             </div>
+                        </template>
+                        <div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
+                        <button @click="showMenuOptionsModal = false; selectedMenuItemForOptions = null" class="absolute top-6 right-6 w-10 h-10 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-black/20 transition-all">
+                            <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
 
-                    <div class="p-10 space-y-10">
-                        <div class="space-y-6">
-                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Choose Your Size</h4>
-                            <div class="grid grid-cols-1 gap-4">
-                                <button @click="menuOptions = { size: 'Small', addonPrice: 0 }" 
-                                        :class="menuOptions.size === 'Small' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
-                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group overflow-hidden relative">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Small' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
-                                            <span class="font-black">SM</span>
-                                        </div>
-                                        <span class="font-black text-slate-700">Small</span>
-                                    </div>
-                                    <span class="text-sm font-black text-slate-400 italic">Free Upgrade</span>
-                                    <div x-show="menuOptions.size === 'Small'" class="absolute -right-2 -bottom-2 bg-[#006738] text-white p-2 rounded-tl-2xl">
-                                        <i data-lucide="check" class="w-4 h-4"></i>
-                                    </div>
-                                </button>
-
-                                <button @click="menuOptions = { size: 'Medium', addonPrice: 30 }" 
-                                        :class="menuOptions.size === 'Medium' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
-                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group relative overflow-hidden">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Medium' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
-                                            <span class="font-black">MD</span>
-                                        </div>
-                                        <span class="font-black text-slate-700">Medium</span>
-                                    </div>
-                                    <span class="text-sm font-black text-[#006738]">+ ₱30</span>
-                                </button>
-
-                                <button @click="menuOptions = { size: 'Large', addonPrice: 50 }" 
-                                        :class="menuOptions.size === 'Large' ? 'border-[#006738] bg-green-50 ring-4 ring-green-100' : 'border-slate-100 hover:border-slate-300'"
-                                        class="flex items-center justify-between p-6 border-2 rounded-3xl transition-all group relative overflow-hidden">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="menuOptions.size === 'Large' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
-                                            <span class="font-black">LG</span>
-                                        </div>
-                                        <span class="font-black text-slate-700">Large</span>
-                                    </div>
-                                    <span class="text-sm font-black text-[#006738]">+ ₱50</span>
-                                </button>
-                            </div>
+                    <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
+                        <div class="mb-10">
+                            <h3 class="text-4xl font-black text-slate-800 font-poppins mb-3 tracking-tight" x-text="selectedMenuItemForOptions?.Menu_Name"></h3>
+                            <p class="text-slate-500 text-sm leading-relaxed font-medium" x-text="selectedMenuItemForOptions?.Menu_Description"></p>
                         </div>
 
-                        <div class="flex items-center justify-between pt-8 border-t-2 border-slate-50">
+                        <div class="space-y-8">
                             <div>
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Price</p>
-                                <p class="text-4xl font-black text-[#006738]" x-text="'₱' + (parseFloat(selectedMenuItemForOptions?.Menu_Price || 0) + menuOptions.addonPrice).toFixed(0)"></p>
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6">Choose Your Size</h4>
+                                <div class="space-y-4">
+                                    <button @click="menuOptions = { size: 'Small', addonPrice: 0 }" 
+                                            :class="menuOptions.size === 'Small' ? 'border-[#006738] bg-green-50' : 'border-slate-100 hover:border-slate-200 bg-white'"
+                                            class="w-full flex items-center justify-between p-6 border-2 rounded-3xl transition-all relative group shadow-sm">
+                                        <div class="flex items-center gap-5">
+                                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors font-black text-sm" :class="menuOptions.size === 'Small' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                                SM
+                                            </div>
+                                            <span class="font-black text-slate-700 text-lg">Small</span>
+                                        </div>
+                                        <span class="text-xs font-black text-slate-300 uppercase italic">Free Upgrade</span>
+                                    </button>
+
+                                    <button @click="menuOptions = { size: 'Medium', addonPrice: 30 }" 
+                                            :class="menuOptions.size === 'Medium' ? 'border-[#006738] bg-green-50' : 'border-slate-100 hover:border-slate-200 bg-white'"
+                                            class="w-full flex items-center justify-between p-6 border-2 rounded-3xl transition-all group shadow-sm">
+                                        <div class="flex items-center gap-5">
+                                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors font-black text-sm" :class="menuOptions.size === 'Medium' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                                MD
+                                            </div>
+                                            <span class="font-black text-slate-700 text-lg">Medium</span>
+                                        </div>
+                                        <span class="text-sm font-black text-[#006738]">+ ₱30</span>
+                                    </button>
+
+                                    <button @click="menuOptions = { size: 'Large', addonPrice: 50 }" 
+                                            :class="menuOptions.size === 'Large' ? 'border-[#006738] bg-green-50' : 'border-slate-100 hover:border-slate-200 bg-white'"
+                                            class="w-full flex items-center justify-between p-6 border-2 rounded-3xl transition-all group shadow-sm">
+                                        <div class="flex items-center gap-5">
+                                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors font-black text-sm" :class="menuOptions.size === 'Large' ? 'bg-[#006738] text-white' : 'bg-slate-50 text-slate-400'">
+                                                LG
+                                            </div>
+                                            <span class="font-black text-slate-700 text-lg">Large</span>
+                                        </div>
+                                        <span class="text-sm font-black text-[#006738]">+ ₱50</span>
+                                    </button>
+                                </div>
                             </div>
-                            <button @click="confirmOptions" class="bg-[#ffec00] text-black px-12 py-5 rounded-[2rem] font-black shadow-xl shadow-yellow-500/10 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                        </div>
+                    </div>
+
+                    <div class="p-8 bg-[#f8faf8] border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</p>
+                                <p class="text-4xl font-black text-[#ed1c24]" x-text="'₱' + (parseFloat(selectedMenuItemForOptions?.Menu_Price || 0) + menuOptions.addonPrice).toFixed(0)"></p>
+                            </div>
+                            <button @click="confirmOptions" class="bg-[#006738] text-white px-12 py-5 rounded-[2.5rem] font-black shadow-xl shadow-green-900/20 hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-[0.2em]">
                                 Add to Tray
                             </button>
                         </div>
@@ -2707,46 +2720,6 @@ $user_id = $_SESSION['user_id'];
                         </div>
 
                         <button @click="showTrackingModal = false" class="w-full bg-[#fcfbf7] text-slate-400 font-black py-4 rounded-2xl hover:bg-slate-100 transition-colors uppercase tracking-widest text-xs">Close Details</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div x-show="activeTab === 'promos'" x-cloak>
-            <div class="mb-8">
-                <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Active Promos</h2>
-                <p class="text-slate-500 text-sm">Exclusive deals just for you!</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-[#006738] rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-                    <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
-                    <div class="relative z-10 flex flex-col h-full justify-between">
-                        <div>
-                            <span class="bg-[#ffec00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-full mb-4 inline-block">Flash Deal</span>
-                            <h3 class="text-3xl font-black font-poppins mb-2">P50 OFF</h3>
-                            <p class="text-green-100 font-black">On all Family Fiesta meals!</p>
-                        </div>
-                        <div class="mt-8">
-                            <p class="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Code: INASAL50</p>
-                            <button class="bg-white text-[#006738] font-black px-6 py-2 rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-transform">Apply Now</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-[2.5rem] border-2 border-slate-100 p-8 relative overflow-hidden group">
-                    <div class="absolute inset-0 grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">
-                        <img src="https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover">
-                    </div>
-                    <div class="relative z-10 bg-white/90 backdrop-blur-sm p-6 rounded-3xl h-full flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-xl font-black text-slate-800 font-poppins">Bigger & Juicier Pork BBQ</h3>
-                            <p class="text-slate-500 text-sm mt-1">Try our improved marinade today!</p>
-                        </div>
-                        <div class="mt-8 flex justify-between items-center">
-                            <span class="text-[#006738] font-black text-2xl">₱20 OFF</span>
-                            <button @click="activeTab = 'order_now'; selectedCategory = 'Pork BBQ'" class="bg-[#006738] text-white font-black px-6 py-2 rounded-xl text-xs uppercase tracking-widest">Order Now</button>
-                        </div>
                     </div>
                 </div>
             </div>
