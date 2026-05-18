@@ -69,7 +69,7 @@ $user_id = $_SESSION['user_id'];
     ],
     categories: [
         { name: 'Must Try!', icon: 'star', image: 'must-try.jpg', db: 'Chicken' },
-        { name: 'Chicken Inasal', icon: 'flame', image: 'hero-1.jpg', db: 'Chicken' },
+        { name: 'Chicken Inasal', icon: 'flame', image: 'must-try.jpg', db: 'Chicken' },
         { name: 'Pork BBQ', icon: 'drumstick', image: 'pork.jpg', db: 'Pork' },
         { name: 'Family Fiesta', icon: 'users', image: 'fiesta.jpg', db: 'Family Fiesta' },
         { name: 'Buddy Fiesta', icon: 'user-2', image: 'fiesta.jpg', db: 'Buddy Fiesta' },
