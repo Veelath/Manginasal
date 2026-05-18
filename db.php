@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$port = '3306'; // Change to '33060' if yours is different in XAMPP
+$port = '3307'; // Change to '33060' if yours is different in XAMPP
 $db   = 'mang_inasal_db'; 
 $user = 'root';
 $pass = ''; // Default XAMPP password is empty
