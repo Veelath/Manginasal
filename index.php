@@ -263,9 +263,9 @@
             </section>
 
             <!-- App Promo Section -->
-            <section class="bg-[#ffec00] py-16 sm:py-24 relative overflow-hidden">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12 sm:gap-20">
-                    <div class="flex-1 space-y-6 sm:space-y-10 z-10">
+            <section class="bg-[#ffec00] pt-16 sm:pt-24 pb-0 relative overflow-hidden">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center md:items-end gap-12 sm:gap-20">
+                    <div class="flex-1 space-y-6 sm:space-y-10 z-10 pb-16 sm:pb-24">
                         <h2 class="text-3xl sm:text-6xl font-black text-slate-800 font-poppins leading-[1.1] tracking-tight">Order Mang Inasal online for delivery or pick-up!</h2>
                         <p class="text-slate-700 text-lg sm:text-2xl font-bold leading-relaxed max-w-2xl">Enjoy unli-sulit at unli-saya with the all-new Mang Inasal app. It makes ordering for delivery or pick-up super easy, plus you get access to exclusive promos! <br> <span class="font-black text-slate-800">Download the app now.</span></p>
                         <div class="flex flex-wrap items-center gap-4 pt-4 shrink-0">
@@ -274,13 +274,17 @@
                         </div>
                     </div>
                     <div class="flex-1 relative z-10 px-8 sm:px-0 flex justify-center">
-                        <div class="relative w-full max-w-[500px]">
-                             <img src="phone-promo.jpg" class="w-full h-auto drop-shadow-2xl" alt="App Preview">
+                        <div class="relative w-full max-w-[500px] translate-y-16 sm:translate-y-24">
+                             <img src="phone-promo.jpg" class="w-full h-auto drop-shadow-2xl mix-blend-multiply" alt="App Preview">
                         </div>
                     </div>
                 </div>
-                <!-- Background decorative logo -->
-                <i data-lucide="chef-hat" class="absolute right-[-10%] bottom-[-10%] w-[50%] h-[50%] text-black/5 rotate-12 -z-0"></i>
+                <!-- Background decorative logo (Chef Hat Pattern) -->
+                <div class="absolute right-[-5%] bottom-[-5%] opacity-10 pointer-events-none transform rotate-12">
+                    <svg width="600" height="600" viewBox="0 0 100 100" class="text-[#006738] fill-current">
+                        <path d="M50 15c-11.6 0-21 9.4-21 21 0 10.1 7.2 18.5 16.7 20.6V62c0 2.2 1.8 4 4.3 4s4.3-1.8 4.3-4v-5.4c9.5-2.1 16.7-10.5 16.7-20.6 0-11.6-9.4-21-21-21zM50 52.7c-9.2 0-16.7-7.5-16.7-16.7s7.5-16.7 16.7-16.7 16.7 7.5 16.7 16.7-7.5 16.7-16.7 16.7zM42.3 68h15.4c1.1 0 2 .9 2 2s-.9 2-2 2H42.3c-1.1 0-2-.9-2-2s.9-2 2-2zM40.3 74h19.4c1.1 0 2 .9 2 2s-.9 2-2 2H40.3c-1.1 0-2-.9-2-2s.9-2 2-2zM38.3 80h23.4c1.1 0 2 .9 2 2s-.9 2-2 2H38.3c-1.1 0-2-.9-2-2s.9-2 2-2z"/>
+                    </svg>
+                </div>
             </section>
         </div>
     </main>
@@ -316,14 +320,14 @@
                 <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
                 <!-- Social Icons matching screenshot style -->
                 <div class="flex items-center gap-3">
-                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
-                        <i data-lucide="facebook" class="w-5 h-5"></i>
+                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
+                        <i data-lucide="facebook" class="w-5 h-5 fill-current"></i>
                     </a>
-                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
                         <i data-lucide="instagram" class="w-5 h-5"></i>
                     </a>
-                    <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
-                        <i data-lucide="youtube" class="w-5 h-5"></i>
+                    <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
+                        <i data-lucide="youtube" class="w-5 h-5 fill-current"></i>
                     </a>
                 </div>
             </div>

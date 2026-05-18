@@ -2814,14 +2814,14 @@ $user_id = $_SESSION['user_id'];
                     <p class="text-white text-[11px] sm:text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
                     <!-- Social Icons matching screenshot style -->
                     <div class="flex items-center gap-3">
-                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
-                            <i data-lucide="facebook" class="w-5 h-5"></i>
+                        <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
+                            <i data-lucide="facebook" class="w-5 h-5 fill-current"></i>
                         </a>
-                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
+                        <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
                             <i data-lucide="instagram" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all">
-                            <i data-lucide="youtube" class="w-5 h-5"></i>
+                        <a href="#" class="w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-[#006738] hover:scale-110 transition-all">
+                            <i data-lucide="youtube" class="w-5 h-5 fill-current"></i>
                         </a>
                     </div>
                 </div>
