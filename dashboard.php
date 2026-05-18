@@ -1065,11 +1065,11 @@ $user_id = $_SESSION['user_id'];
                 
                 <!-- Carousel Controls -->
                 <button @click="currentCarousel = (currentCarousel - 1 + carouselItems.length) % carouselItems.length" 
-                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
+                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-[#006738] transition-all z-20 shadow-lg">
                     <i data-lucide="chevron-left"></i>
                 </button>
                 <button @click="currentCarousel = (currentCarousel + 1) % carouselItems.length" 
-                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100">
+                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-[#006738] transition-all z-20 shadow-lg">
                     <i data-lucide="chevron-right"></i>
                 </button>
                 

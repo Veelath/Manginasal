@@ -176,7 +176,7 @@
         <!-- Landing Sections (Hidden when Auth Form is visible to improve focus, or kept behind backdrop) -->
         <div x-show="!showAuthForm">
             <!-- Hero Banner -->
-            <section class="relative w-full h-[300px] sm:h-[450px] overflow-hidden">
+            <section class="relative w-full h-[300px] sm:h-[450px] overflow-hidden group">
                 <template x-for="(slide, index) in slides" :key="index">
                     <div x-show="currentSlide === index" 
                          x-transition:enter="transition ease-out duration-1000"
@@ -190,13 +190,12 @@
                     </div>
                 </template>
 
-                <!-- Carousel Controls -->
                 <button @click="currentSlide = (currentSlide - 1 + slides.length) % slides.length" 
-                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 z-20">
+                        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-[#006738] transition-all z-20 shadow-lg">
                     <i data-lucide="chevron-left"></i>
                 </button>
                 <button @click="currentSlide = (currentSlide + 1) % slides.length" 
-                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 z-20">
+                        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-[#006738] transition-all z-20 shadow-lg">
                     <i data-lucide="chevron-right"></i>
                 </button>
 
