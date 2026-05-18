@@ -40,7 +40,7 @@ $user_id = $_SESSION['user_id'];
     reports: { dailySales: 0, totalOrders: 0, topItems: [] },
     newBranch: { name: '', city: '', street: '', brgy: '', province: '', radius: 5 },
     newManager: { fname: '', lname: '', email: '', mobile: '', branch_id: '', password: '' },
-    newMenu: { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard' },
+    newMenu: { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard', image: '' },
     newStaff: { fname: '', lname: '', email: '', mobile: '', role: 'Kitchen Staff', password: 'password' },
     newRider: { fname: '', lname: '', email: '', mobile: '', password: 'password' },
     menuItems: [],
@@ -572,6 +572,7 @@ $user_id = $_SESSION['user_id'];
         if(data.success) {
             this.fetchMenu();
             this.showMenuModal = false;
+            this.newMenu = { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard', image: '' };
         }
     },
 
@@ -1041,12 +1042,8 @@ $user_id = $_SESSION['user_id'];
                          x-transition:enter-end="opacity-100 scale-100"
                          class="absolute inset-0">
                         <img :src="item.image" class="w-full h-full object-cover brightness-75" :alt="item.title">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-12">
-                            <h2 class="text-white text-5xl font-black font-poppins mb-2" x-text="item.title"></h2>
-                            <p class="text-[#ffec00] text-xl font-black tracking-widest mb-8" x-text="item.subtitle"></p>
-                            <button @click="activeTab = 'order_now'" class="bg-[#ffec00] text-black font-black px-8 py-4 rounded-full w-fit hover:scale-105 transition-transform shadow-xl shadow-yellow-500/20 uppercase tracking-widest text-sm">
-                                Order Now
-                            </button>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent flex flex-col justify-end p-12">
+                            <!-- Text removed by user request -->
                         </div>
                     </div>
                 </template>
@@ -1568,9 +1565,21 @@ $user_id = $_SESSION['user_id'];
                         <template x-for="item in menuItems" :key="item.Menu_ID">
                             <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                 <td class="p-4">
-                                    <div class="font-bold text-slate-800" x-text="item.Menu_Name"></div>
-                                    <div class="text-[10px] text-[#006738] font-black uppercase tracking-tighter" x-text="item.Menu_Size"></div>
-                                    <div class="text-[11px] text-slate-400 mt-1 italic line-clamp-1" x-text="item.Menu_Description"></div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                            <template x-if="item.Menu_Image">
+                                                <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                            </template>
+                                            <template x-if="!item.Menu_Image">
+                                                <i data-lucide="utensils" class="w-4 h-4 text-slate-300"></i>
+                                            </template>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-slate-800" x-text="item.Menu_Name"></div>
+                                            <div class="text-[10px] text-[#006738] font-black uppercase tracking-tighter" x-text="item.Menu_Size"></div>
+                                            <div class="text-[11px] text-slate-400 mt-1 italic line-clamp-1" x-text="item.Menu_Description"></div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="p-4">
                                     <span class="text-[10px] font-black uppercase px-2 py-1 rounded bg-slate-100 text-slate-600" x-text="item.Menu_Category"></span>
@@ -1710,6 +1719,23 @@ $user_id = $_SESSION['user_id'];
                             <option>Solong</option>
                             <option>Sizling</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Image</label>
+                        <div class="mt-2 flex items-center gap-4">
+                            <div class="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                                <template x-if="newMenu.image">
+                                    <img :src="newMenu.image" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!newMenu.image">
+                                    <i data-lucide="image" class="w-6 h-6 text-slate-300"></i>
+                                </template>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" @change="let file = $event.target.files[0]; let reader = new FileReader(); reader.onload = (e) => { newMenu.image = e.target.result }; reader.readAsDataURL(file)" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-black">Upload a picture of the menu item</p>
+                            </div>
+                        </div>
                     </div>
                     <button @click="submitMenu()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Save Product</button>
                 </div>
@@ -2075,10 +2101,17 @@ $user_id = $_SESSION['user_id'];
                                 </div>
                                 
                                 <div class="w-full aspect-square bg-slate-50 rounded-3xl mb-6 overflow-hidden flex items-center justify-center text-[#006738] relative">
-                                    <i data-lucide="utensils" class="w-16 h-16 opacity-5 group-hover:scale-125 transition-transform duration-500"></i>
-                                    <div class="absolute inset-0 flex items-center justify-center p-4">
-                                        <p class="text-[10px] text-slate-300 font-bold italic">Image Placeholder</p>
-                                    </div>
+                                    <template x-if="item.Menu_Image">
+                                        <img :src="item.Menu_Image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                    </template>
+                                    <template x-if="!item.Menu_Image">
+                                        <div class="flex flex-col items-center">
+                                            <i data-lucide="utensils" class="w-16 h-16 opacity-5 group-hover:scale-125 transition-transform duration-500"></i>
+                                            <div class="absolute inset-0 flex items-center justify-center p-4">
+                                                <p class="text-[10px] text-slate-300 font-bold italic">Image Placeholder</p>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                                 
                                 <div class="space-y-4">

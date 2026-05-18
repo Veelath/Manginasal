@@ -116,14 +116,20 @@ try {
         $price = $data['price'] ?? 0;
         $cat = $data['category'] ?? '';
         $size = $data['size'] ?? 'Standard';
+        $image = $data['image'] ?? '';
 
         if (empty($name) || empty($cat)) {
             echo json_encode(['success' => false, 'message' => 'Menu name and category required.']);
             exit;
         }
 
-        $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $desc, $price, $cat, $size]);
+        // Ensure image column exists
+        try {
+            $pdo->exec("ALTER TABLE MENU_ITEM ADD COLUMN Menu_Image VARCHAR(255) AFTER Menu_Description");
+        } catch (Exception $e) { /* already exists */ }
+
+        $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size, Menu_Image) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $desc, $price, $cat, $size, $image]);
 
         echo json_encode(['success' => true, 'message' => 'Global menu item added!']);
     }

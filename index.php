@@ -192,10 +192,6 @@
                          x-transition:leave-end="opacity-0 scale-95"
                          class="absolute inset-0">
                         <img :src="slide.image" :alt="slide.title" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center flex-col text-center p-6 sm:p-12">
-                            <h1 class="text-white text-4xl sm:text-7xl font-black mb-8 px-4 leading-tight italic drop-shadow-2xl" x-text="slide.title"></h1>
-                            <button @click="showAuthForm = true; isLogin = true" class="bg-[#006738] text-white text-lg sm:text-2xl font-black uppercase tracking-[0.2em] px-12 sm:px-20 py-4 sm:py-6 rounded-full hover:bg-white hover:text-[#006738] transition-all transform hover:scale-105 active:scale-95 shadow-2xl">Order Now</button>
-                        </div>
                     </div>
                 </template>
 
