@@ -1069,14 +1069,14 @@ $user_id = $_SESSION['user_id'];
                             <i data-lucide="users" class="w-7 h-7"></i>
                         </div>
                         <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Kitchen & Staff</h3>
-                        <p class="text-4xl font-black text-slate-800" x-text="stats.staff"></p>
+                        <p class="text-4xl font-black text-slate-800" x-text="workforce.filter(p => p.source === 'Staff').length"></p>
                     </div>
                     <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden group">
                         <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mb-6">
                             <i data-lucide="bike" class="w-7 h-7 font-bold"></i>
                         </div>
                         <h3 class="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-1">Delivery Riders</h3>
-                        <p class="text-4xl font-black text-slate-800" x-text="stats.riders"></p>
+                        <p class="text-4xl font-black text-slate-800" x-text="workforce.filter(p => p.source === 'Rider' || p.role === 'Driver').length"></p>
                     </div>
                     <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden col-span-1 lg:col-span-2">
                         <div class="flex justify-between items-start mb-6">
@@ -2646,7 +2646,7 @@ $user_id = $_SESSION['user_id'];
                         </div>
                         <div>
                             <h3 class="font-black text-slate-800 text-xl font-poppins" x-text="`${profileData.fname} ${profileData.lname}`"></h3>
-                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Registered Customer</p>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest" x-text="role"></p>
                         </div>
                     </div>
 
