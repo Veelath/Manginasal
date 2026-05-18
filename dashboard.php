@@ -56,7 +56,7 @@ $user_id = $_SESSION['user_id'];
     cart: [],
     orderType: 'Delivery',
     paymentMethod: '',
-    manualAddress: { province: 'Metro Manila', city: '', street: '', brgy: '', landmark: '' },
+    manualAddress: { province: 'Metro Manila', city: '', street: '', brgy: '', postal: '', landmark: '' },
     useCurrentAddress: true,
     showTrackingModal: false,
     selectedOrder: null,
@@ -83,6 +83,10 @@ $user_id = $_SESSION['user_id'];
     showMenuModal: false,
     showStaffModal: false,
     showRiderModal: false,
+    showProfileModal: false,
+    showAddressModal: false,
+    tempProfile: { fname: '', lname: '', mobile: '' },
+    newAddress: { label: 'Home', province: 'Metro Manila', city: '', brgy: '', street: '', unit: '', building: '', landmark: '', postal: '' },
     message: null,
 
     closeAllModals() {
@@ -91,6 +95,8 @@ $user_id = $_SESSION['user_id'];
         this.showMenuModal = false;
         this.showStaffModal = false;
         this.showRiderModal = false;
+        this.showProfileModal = false;
+        this.showAddressModal = false;
     },
 
     init() {
@@ -147,6 +153,48 @@ $user_id = $_SESSION['user_id'];
             };
             this.addresses = data.addresses;
         }
+    },
+
+    openEditProfile() {
+        this.tempProfile = { ...this.profileData };
+        this.showProfileModal = true;
+    },
+
+    async submitProfileUpdate() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_profile', ...this.tempProfile })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchProfile();
+            this.showProfileModal = false;
+        }
+    },
+
+    async submitAddress() {
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'add_address', ...this.newAddress })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) {
+            this.fetchProfile();
+            this.showAddressModal = false;
+            this.newAddress = { label: 'Home', province: 'Metro Manila', city: '', brgy: '', street: '', unit: '', building: '', landmark: '', postal: '' };
+        }
+    },
+
+    async deleteAddress(id) {
+        if(!confirm('Delete this address?')) return;
+        const res = await fetch('orders_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_address', id })
+        });
+        const data = await res.json();
+        if(data.success) this.fetchProfile();
     },
 
     async fetchReports() {
@@ -2352,6 +2400,10 @@ $user_id = $_SESSION['user_id'];
                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Account Profile</h2>
                    <p class="text-slate-500 text-sm">Manage your personal information and addresses.</p>
                 </div>
+                <button @click="openEditProfile()" class="flex items-center gap-2 bg-[#006738] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#004d2a] transition-all">
+                    <i data-lucide="user-cog" class="w-4 h-4"></i>
+                    <span>Edit Profile</span>
+                </button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -2395,25 +2447,34 @@ $user_id = $_SESSION['user_id'];
                         <h3 class="font-black text-slate-800 text-xl font-poppins flex items-center gap-2">
                             <i data-lucide="map-pinned" class="w-5 h-5 text-[#006738]"></i> Saved Addresses
                         </h3>
+                        <button @click="showAddressModal = true" class="text-[10px] font-black uppercase bg-green-50 text-[#006738] px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
+                            + Add New
+                        </button>
                     </div>
                     
                     <div class="space-y-4">
                         <template x-for="addr in addresses" :key="addr.Add_ID">
-                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-start">
-                                <div>
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-start group">
+                                <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-[10px] font-black uppercase bg-[#006738] text-white px-2 py-0.5 rounded" x-text="addr.Add_Label"></span>
+                                        <span class="text-[10px] font-black uppercase bg-[#006738] text-white px-2 py-0.5 rounded shadow-sm" x-text="addr.Add_Label"></span>
                                     </div>
-                                    <p class="text-sm font-bold text-slate-700" x-text="`${addr.Add_Street}, ${addr.Add_City}`"></p>
-                                    <p class="text-xs text-slate-400 mt-1" x-text="`${addr.Add_Province}, ${addr.Add_Label}`"></p>
+                                    <p class="text-sm font-bold text-slate-700 leading-tight" x-text="`${addr.Add_Street}, ${addr.Add_Brgy || ''}`"></p>
+                                    <p class="text-xs text-slate-500 mt-1" x-text="`${addr.Add_City}, ${addr.Add_Province} ${addr.Add_PostalCode || ''}`"></p>
+                                    <p x-show="addr.Add_Building || addr.Add_UnitNum" class="text-[10px] text-slate-400 mt-1" x-text="`${addr.Add_UnitNum || ''} ${addr.Add_Building || ''}`"></p>
+                                    <div x-show="addr.Add_Landmark" class="mt-2 flex items-center gap-1 text-[10px] text-orange-500 italic">
+                                        <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                        <span x-text="addr.Add_Landmark"></span>
+                                    </div>
                                 </div>
-                                <div class="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-red-500 opacity-50 cursor-not-allowed">
-                                    <i data-lucide="trash" class="w-4 h-4"></i>
-                                </div>
+                                <button @click="deleteAddress(addr.Add_ID)" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
                             </div>
                         </template>
                         <template x-if="addresses.length === 0">
-                            <div class="py-10 text-center text-slate-400">
+                            <div class="py-12 text-center text-slate-400 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100">
+                                <i data-lucide="map" class="w-8 h-8 mx-auto mb-2 opacity-20"></i>
                                 <p class="italic text-sm">No saved addresses yet.</p>
                             </div>
                         </template>
@@ -2494,6 +2555,103 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </div>
         </div>
+
+        <!-- Edit Profile Modal -->
+        <div x-show="showProfileModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showProfileModal = false">
+                <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
+                    <h3 class="font-black text-xl font-poppins">Edit Your Profile</h3>
+                    <button @click="showProfileModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">First Name</label>
+                            <input type="text" x-model="tempProfile.fname" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Last Name</label>
+                            <input type="text" x-model="tempProfile.lname" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Mobile Number</label>
+                        <input type="text" x-model="tempProfile.mobile" placeholder="09xxxxxxxxx" maxlength="11" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <button @click="submitProfileUpdate()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Address Modal -->
+        <div x-show="showAddressModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden" @click.away="showAddressModal = false">
+                <div class="p-6 bg-[#006738] text-white flex justify-between items-center border-b border-white/10">
+                    <div>
+                        <h3 class="font-black text-xl font-poppins">Add Delivery Address</h3>
+                        <p class="text-[10px] text-green-100 uppercase tracking-widest mt-1">Specify where we should drop your grill fix!</p>
+                    </div>
+                    <button @click="showAddressModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-8 max-h-[80vh] overflow-y-auto space-y-6">
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Address Label</label>
+                        <div class="grid grid-cols-4 gap-2 mt-2">
+                            <template x-for="l in ['Home', 'Work', 'Office', 'Other']">
+                                <button @click="newAddress.label = l" 
+                                        :class="newAddress.label === l ? 'bg-[#006738] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
+                                        class="py-2.5 rounded-xl text-xs font-black transition-all" x-text="l"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Province</label>
+                            <input type="text" x-model="newAddress.province" placeholder="Metro Manila" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">City / Municipality</label>
+                            <input type="text" x-model="newAddress.city" placeholder="Quezon City" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Barangay</label>
+                            <input type="text" x-model="newAddress.brgy" placeholder="Brgy. 123" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Postal Code</label>
+                            <input type="text" x-model="newAddress.postal" placeholder="1100" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Street / House No.</label>
+                        <input type="text" x-model="newAddress.street" placeholder="123 Malakas St." class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Unit / Floor (Optional)</label>
+                            <input type="text" x-model="newAddress.unit" placeholder="Unit 4B" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Building (Optional)</label>
+                            <input type="text" x-model="newAddress.building" placeholder="Inasal Heights" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Landmark (Optional)</label>
+                        <input type="text" x-model="newAddress.landmark" placeholder="Near the yellow gate" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none text-sm font-bold">
+                    </div>
+
+                    <button @click="submitAddress()" class="w-full bg-[#ffec00] text-black font-black py-5 rounded-2xl shadow-xl shadow-yellow-500/10 hover:scale-[1.02] transition-all mt-4">Save Delivery Address</button>
+                </div>
+            </div>
+        </div>
         <?php endif; ?>
 
         <!-- Branch Selection Overlay for Customers -->
@@ -2548,42 +2706,40 @@ $user_id = $_SESSION['user_id'];
         </div>
 
         <!-- Footer -->
-        <footer class="mt-12 pt-12 border-t border-slate-100 pb-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-                <div class="col-span-1 md:col-span-2">
-                    <div class="inline-block bg-[#ffec00] p-3 border-[3px] border-black rounded-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6">
-                        <div class="text-black font-poppins font-black leading-none tracking-tighter">
-                            <span class="block text-[10px] uppercase italic text-black">Mang</span>
-                            <span class="block text-2xl uppercase text-[#ed1c24] -mt-1">Inasal</span>
-                        </div>
+        <footer class="bg-[#006738] -mx-4 sm:-mx-6 lg:-mx-8 mt-12 pt-12 pb-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-4">
+                    <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">About Us</a>
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">FAQs</a>
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Contact Us</a>
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Corporate Information</a>
+                        <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Privacy Notice</a>
                     </div>
-                    <p class="text-slate-400 text-sm font-bold leading-relaxed max-w-sm">Experience the authentic charcoal-grilled goodness of the Philippines. Our 2-in-1 sa laki, nuot sa ihaw-sarap meals are here to satisfy your cravings.</p>
-                </div>
-                <div>
-                    <h4 class="font-black text-xs uppercase tracking-widest text-slate-800 mb-6">Explore</h4>
-                    <ul class="space-y-4 text-sm font-bold text-slate-400">
-                        <li><a href="#" class="hover:text-[#006738] transition-colors">Our Story</a></li>
-                        <li><a href="#" class="hover:text-[#006738] transition-colors">Career</a></li>
-                        <li><a href="#" class="hover:text-[#006738] transition-colors">Help Center</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-black text-xs uppercase tracking-widest text-slate-800 mb-6">Connect</h4>
-                    <div class="flex items-center gap-3 mb-6">
-                        <a href="#" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-[#006738] hover:text-white hover:border-[#006738] transition-all"><i data-lucide="facebook" class="w-5 h-5"></i></a>
-                        <a href="#" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-[#006738] hover:text-white hover:border-[#006738] transition-all"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+                    <div class="flex items-center gap-4 shrink-0">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 cursor-pointer rounded-lg">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 cursor-pointer rounded-lg">
                     </div>
-                    <ul class="space-y-4 text-sm font-bold text-slate-400">
-                        <li><a href="#" class="hover:text-[#006738] transition-colors">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-[#006738] transition-colors">Terms of Use</a></li>
-                    </ul>
                 </div>
-            </div>
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-slate-50">
-                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest">© 2026 MANG INASAL PHILIPPINES INC. ALL RIGHTS RESERVED.</p>
-                <div class="flex items-center gap-4 opacity-30 grayscale">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" class="h-3 w-auto">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" class="h-5 w-auto">
+
+                <p class="text-white text-[11px] font-medium mb-8">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
+                
+                <div class="h-px bg-white/20 w-full mb-8"></div>
+
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <p class="text-white text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                            <i data-lucide="facebook" class="w-4 h-4 fill-current"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                            <i data-lucide="instagram" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                            <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </footer>

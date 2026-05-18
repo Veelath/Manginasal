@@ -31,10 +31,12 @@ CREATE TABLE IF NOT EXISTS ADDRESS (
     Add_Cust_ID INT NOT NULL,
     Add_Province VARCHAR(35) NOT NULL,
     Add_City VARCHAR(35) NOT NULL,
+    Add_Brgy VARCHAR(50) NOT NULL,
+    Add_Street VARCHAR(50) NOT NULL,
     Add_UnitNum VARCHAR(20),
     Add_Building VARCHAR(50),
-    Add_Street VARCHAR(50) NOT NULL,
     Add_Landmark VARCHAR(100),
+    Add_PostalCode VARCHAR(10),
     Add_Label VARCHAR(20) NOT NULL, -- e.g., 'Home', 'Office'
     FOREIGN KEY (Add_Cust_ID) REFERENCES CUSTOMER(Cust_ID) ON DELETE CASCADE
 );

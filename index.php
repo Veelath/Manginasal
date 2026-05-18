@@ -284,22 +284,39 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#006738] py-12">
+    <footer class="bg-[#006738] pt-12 pb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-12 gap-y-6 mb-12">
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">About Us</a>
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">FAQs</a>
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">Contact Us</a>
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">Corporate Information</a>
-                <a href="#" class="text-white text-xs sm:text-sm font-black uppercase tracking-widest hover:text-[#ffec00] transition-colors">Privacy Notice</a>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-4">
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">About Us</a>
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">FAQs</a>
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Contact Us</a>
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Terms and Conditions</a>
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Corporate Information</a>
+                    <a href="#" class="text-white text-sm font-bold hover:text-[#ffec00] transition-colors">Privacy Notice</a>
+                </div>
+                <div class="flex items-center gap-4 shrink-0">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-10 cursor-pointer rounded-lg">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-10 cursor-pointer rounded-lg">
+                </div>
             </div>
+
+            <p class="text-white text-[11px] font-medium mb-8">DTI Trustmark Application submitted with Reference No. 250922-111194080, pending approval</p>
             
-            <div class="flex flex-col md:flex-row justify-between items-center gap-8 pt-12 border-t border-white/10">
-                <p class="text-white/40 text-[10px] font-black uppercase tracking-widest">© 2026 MANG INASAL PHILIPPINES INC. ALL RIGHTS RESERVED.</p>
+            <div class="h-px bg-white/20 w-full mb-8"></div>
+
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <p class="text-white text-xs font-medium">Copyright © 2025 - 2026. Mang Inasal Philippines, Inc. All rights reserved.</p>
                 <div class="flex items-center gap-4">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" class="h-8 brightness-0 invert opacity-50 hover:opacity-100 transition-opacity">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" class="h-8 brightness-0 invert opacity-50 hover:opacity-100 transition-opacity">
+                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                        <i data-lucide="facebook" class="w-4 h-4 fill-current"></i>
+                    </a>
+                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                        <i data-lucide="instagram" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#006738] hover:bg-[#ffec00] transition-all">
+                        <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+                    </a>
                 </div>
             </div>
         </div>

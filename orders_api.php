@@ -84,13 +84,15 @@ try {
         
         // Find or create address
         if ($manual_address) {
-            $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Street, Add_Landmark, Add_Label) VALUES (?, ?, ?, ?, ?, 'Order Address')");
+            $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Brgy, Add_Street, Add_Landmark, Add_PostalCode, Add_Label) VALUES (?, ?, ?, ?, ?, ?, ?, 'Order Address')");
             $stmt->execute([
                 $user_id, 
                 $manual_address['province'], 
                 $manual_address['city'], 
+                $manual_address['brgy'] ?? '',
                 $manual_address['street'], 
                 $manual_address['landmark'] ?? '',
+                $manual_address['postal'] ?? '',
             ]);
             $address_id = $pdo->lastInsertId();
         } else {
@@ -162,15 +164,77 @@ try {
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_profile') {
-        $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_MobileNum FROM CUSTOMER WHERE Cust_ID = ?");
+        $stmt = $pdo->prepare("SELECT Cust_FName, Cust_LName, Cust_Email, Cust_Num FROM CUSTOMER WHERE Cust_ID = ?");
         $stmt->execute([$user_id]);
         $profile = $stmt->fetch();
         
-        $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ?");
+        $stmt = $pdo->prepare("SELECT * FROM ADDRESS WHERE Add_Cust_ID = ? ORDER BY Add_ID DESC");
         $stmt->execute([$user_id]);
         $addresses = $stmt->fetchAll();
         
-        echo json_encode(['success' => true, 'profile' => $profile, 'addresses' => $addresses]);
+        echo json_encode([
+            'success' => true, 
+            'profile' => [
+                'Cust_FName' => $profile['Cust_FName'],
+                'Cust_LName' => $profile['Cust_LName'],
+                'Cust_Email' => $profile['Cust_Email'],
+                'Cust_MobileNum' => $profile['Cust_Num']
+            ], 
+            'addresses' => $addresses
+        ]);
+    }
+    elseif ($action === 'update_profile') {
+        $fname = trim($data['fname']);
+        $lname = trim($data['lname']);
+        $mobile = trim($data['mobile']);
+
+        if (empty($fname) || empty($lname) || empty($mobile)) {
+            echo json_encode(['success' => false, 'message' => 'All fields are required.']);
+            exit;
+        }
+
+        if (!preg_match('/^[0-9]{11}$/', $mobile)) {
+            echo json_encode(['success' => false, 'message' => 'Mobile number must be 11 digits.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE CUSTOMER SET Cust_FName = ?, Cust_LName = ?, Cust_Num = ? WHERE Cust_ID = ?");
+        $stmt->execute([$fname, $lname, $mobile, $user_id]);
+
+        echo json_encode(['success' => true, 'message' => 'Profile updated successfully!']);
+    }
+    elseif ($action === 'add_address') {
+        $label = trim($data['label']);
+        $province = trim($data['province']);
+        $city = trim($data['city']);
+        $brgy = trim($data['brgy']);
+        $street = trim($data['street']);
+        $unit = trim($data['unit'] ?? '');
+        $building = trim($data['building'] ?? '');
+        $landmark = trim($data['landmark'] ?? '');
+        $postal = trim($data['postal'] ?? '');
+
+        if (empty($label) || empty($province) || empty($city) || empty($brgy) || empty($street)) {
+            echo json_encode(['success' => false, 'message' => 'Label, Province, City, Barangay, and Street are required.']);
+            exit;
+        }
+
+        // Migration check: Ensure columns exist (for safety if user didn't re-run SQL)
+        try {
+            $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_Brgy VARCHAR(50) NOT NULL AFTER Add_City");
+            $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_PostalCode VARCHAR(10) AFTER Add_Landmark");
+        } catch (Exception $e) { /* already exists */ }
+
+        $stmt = $pdo->prepare("INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Brgy, Add_Street, Add_UnitNum, Add_Building, Add_Landmark, Add_PostalCode, Add_Label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$user_id, $province, $city, $brgy, $street, $unit, $building, $landmark, $postal, $label]);
+
+        echo json_encode(['success' => true, 'message' => 'Address added successfully!']);
+    }
+    elseif ($action === 'delete_address') {
+        $id = $data['id'];
+        $stmt = $pdo->prepare("DELETE FROM ADDRESS WHERE Add_ID = ? AND Add_Cust_ID = ?");
+        $stmt->execute([$id, $user_id]);
+        echo json_encode(['success' => true, 'message' => 'Address removed.']);
     }
     elseif ($action === 'get_rider_deliveries') {
         if ($role !== 'Driver') {
