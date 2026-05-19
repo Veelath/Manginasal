@@ -194,7 +194,7 @@ try {
         echo json_encode(['success' => true, 'message' => 'Global menu item added!']);
     }
     elseif ($action === 'get_menu') {
-        $stmt = $pdo->query("SELECT * FROM MENU_ITEM");
+        $stmt = $pdo->query("SELECT * FROM MENU_ITEM WHERE Menu_Status != 'D'");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'delete_menu') {
@@ -203,9 +203,10 @@ try {
             echo json_encode(['success' => false, 'message' => 'ID required.']);
             exit;
         }
-        $stmt = $pdo->prepare("DELETE FROM MENU_ITEM WHERE Menu_ID = ?");
+        // Use soft delete 'D' to avoid foreign key issues with old orders
+        $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Status = 'D' WHERE Menu_ID = ?");
         $stmt->execute([$id]);
-        echo json_encode(['success' => true, 'message' => 'Menu item deleted!']);
+        echo json_encode(['success' => true, 'message' => 'Menu item removed from active catalog!']);
     }
     elseif ($action === 'update_menu_status') {
         $id = $data['id'] ?? null;

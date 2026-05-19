@@ -75,11 +75,12 @@ try {
         echo json_encode(['success' => true, 'message' => 'Rider updated successfully!']);
     }
     elseif ($action === 'get_menu_availability') {
-        // Get all menu items and their status for this branch
+        // Get all menu items and their status for this branch (excluding soft-deleted)
         $stmt = $pdo->prepare("
             SELECT m.*, IFNULL(bm.Is_Available, 'Y') as Is_Available 
             FROM MENU_ITEM m 
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
+            WHERE m.Menu_Status != 'D'
         ");
         $stmt->execute([$branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
