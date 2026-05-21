@@ -48,9 +48,9 @@
         </div>
         <!-- Bottom Header (Navigation) -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 sm:h-12 flex items-center">
-            <nav class="flex items-center gap-6 sm:gap-10">
-                <a href="#" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-800 hover:text-[#006738] transition-colors border-b-2 border-transparent hover:border-[#006738] h-full flex items-center">Menu</a>
-                <a href="#" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-800 hover:text-[#006738] transition-colors border-b-2 border-transparent hover:border-[#006738] h-full flex items-center">Stores</a>
+            <nav class="flex items-center gap-6 sm:gap-10 h-full">
+                <a href="#featured-menu" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-800 hover:text-[#006738] transition-colors border-b-2 border-transparent hover:border-[#006738] h-full flex items-center">Menu</a>
+                <button @click="fetchBranches(); showBranchesModal = true" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-800 hover:text-[#006738] transition-colors border-b-2 border-transparent hover:border-[#006738] h-full flex items-center cursor-pointer">Stores</button>
             </nav>
         </div>
     </header>
@@ -173,6 +173,105 @@
             </div>
         </div>
 
+        <!-- Branches Modal Backdrop -->
+        <div x-show="showBranchesModal" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @click.self="showBranchesModal = false"
+             x-cloak>
+            
+            <div class="w-full max-w-4xl bg-[#fcfbf7] rounded-3xl shadow-2xl overflow-hidden flex flex-col min-h-[500px] max-h-[90vh] transition-all relative">
+                <!-- Close Button -->
+                <button @click="showBranchesModal = false" class="absolute top-4 right-4 z-[210] w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-400 hover:text-[#ed1c24] transition-colors shadow">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <!-- Top Header -->
+                <div class="bg-[#006738] p-8 text-center sm:text-left relative overflow-hidden">
+                    <div class="absolute right-[-5%] top-[-30%] w-64 h-64 opacity-5 pointer-events-none text-[#ffec00] rotate-12">
+                        <i data-lucide="chef-hat" class="w-full h-full"></i>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+                        <div>
+                            <span class="inline-block bg-[#ffec00] text-black text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded mb-3">Our Network</span>
+                            <h2 class="text-white text-3xl font-bold font-poppins">Mang Inasal Branches</h2>
+                            <p class="text-green-50/80 text-sm mt-1 font-medium">Select a branch to view availability or log in to place your order.</p>
+                        </div>
+                        <div class="shrink-0">
+                            <!-- Quick count badge -->
+                            <div class="bg-[#ffec00] font-black text-black px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg">
+                                <i data-lucide="store" class="w-5 h-5 text-black"></i>
+                                <span class="text-sm tracking-tight" x-text="branches.length + ' Active Stores'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stores List inside Modal -->
+                <div class="p-6 sm:p-8 overflow-y-auto flex-grow bg-slate-50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <template x-for="(branch, index) in branches" :key="branch.Brnch_ID">
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-[#ffec00] hover:shadow-md transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-green-50/50 rounded-full group-hover:scale-150 transition-transform"></div>
+                                <div class="space-y-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-[#ffec00] text-black rounded-xl flex items-center justify-center font-bold shadow group-hover:scale-110 transition-transform">
+                                            <i :data-lucide="['store', 'building', 'map-pin', 'chef-hat'][index % 4]" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-black text-slate-800 font-poppins" x-text="branch.Brnch_Name"></h3>
+                                            <div class="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                                <i data-lucide="navigation" class="w-3 h-3 text-[#006738]"></i>
+                                                <span x-text="branch.Brnch_City"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-slate-50 pt-4 space-y-2">
+                                        <div class="flex items-start gap-2.5 text-slate-600 text-sm font-medium">
+                                            <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
+                                            <span x-text="branch.Brnch_Street + ', ' + branch.Brnch_Brgy + ', ' + branch.Brnch_City + ', ' + branch.Brnch_Province"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-xs font-black uppercase text-[#006738] bg-green-50 w-max px-2.5 py-1 rounded-full">
+                                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                                            <span x-text="'Delivery Radius: ' + parseFloat(branch.Brnch_Radius) + ' km'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-6">
+                                    <button @click="showBranchesModal = false; showAuthForm = true; isLogin = true; $nextTick(() => lucide.createIcons())" class="w-full bg-[#006738] hover:bg-[#004d29] text-white font-black py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/5 group/btn transition-all active:scale-[0.98] text-xs uppercase tracking-widest">
+                                        <span>Order From This Branch</span>
+                                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <template x-if="branches.length === 0">
+                        <div class="py-16 text-center text-slate-400 space-y-4">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                                <i data-lucide="store-off" class="w-8 h-8 text-slate-400 animate-pulse"></i>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-base font-black text-slate-700">No active branches found.</p>
+                                <p class="text-sm text-slate-400">Our branches are currently preparing. Please check back soon!</p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer/Banner in modal -->
+                <div class="p-4 bg-[#ffec00] text-center border-t border-slate-100 flex items-center justify-center gap-2">
+                    <span class="text-xs font-black text-black uppercase tracking-wider">🔥 BIG SAINYO, LIPAD SA SARAP! 🔥</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Landing Sections (Hidden when Auth Form is visible to improve focus, or kept behind backdrop) -->
         <div x-show="!showAuthForm">
             <!-- Hero Banner -->
@@ -210,7 +309,7 @@
             </section>
 
             <!-- Featured Menu -->
-            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+            <section id="featured-menu" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
                 <div class="flex items-center justify-between mb-12 sm:mb-16">
                     <h2 class="text-2xl sm:text-4xl font-black text-slate-800 font-poppins tracking-tight">Featured Menu</h2>
                     <a href="#" class="text-[#006738] font-bold text-sm sm:text-lg flex items-center gap-2 hover:underline">View All <i data-lucide="chevron-right" class="w-5 h-5"></i></a>
@@ -337,6 +436,9 @@
                 password: '',
                 loading: false,
                 message: null,
+                // Branches & Stores
+                branches: [],
+                showBranchesModal: false,
                 // Slider state
                 currentSlide: 0,
                 slides: [
@@ -353,8 +455,25 @@
                         image: 'hero3.jpg'
                     }
                 ],
+                async fetchBranches() {
+                    try {
+                        const response = await fetch('orders_api.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'get_branches' })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            this.branches = data.data;
+                            this.$nextTick(() => lucide.createIcons());
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch branches:', err);
+                    }
+                },
                 init() {
                     lucide.createIcons();
+                    this.fetchBranches();
                 },
                 toggleAuth() {
                     this.isLogin = !this.isLogin;

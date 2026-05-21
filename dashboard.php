@@ -109,6 +109,58 @@ $user_id = $_SESSION['user_id'];
     riderHistory: [],
     kitchenSubTab: 'active',
     riderSubTab: 'active',
+    showNotificationsDropdown: false,
+
+    getNotifications() {
+        if (this.role === 'Customer') {
+            return (this.customerOrders || []).map(o => ({
+                id: 'order_' + o.Order_ID + '_' + o.Order_Stat,
+                title: 'Order #' + o.Order_ID + ' Update',
+                body: o.Order_Stat === 'Pending' ? 'Your order is currently pending approval.' :
+                      o.Order_Stat === 'Preparing' ? 'Our kitchen started grilling your food! Nuot sa buto sarap!' :
+                      o.Order_Stat === 'Ready' ? 'Your order is hot and ready! Assigning a delivery rider now.' :
+                      o.Order_Stat === 'Delivering' ? 'Our rider is delivering your order! Prepare your exact cash/payment.' :
+                      o.Order_Stat === 'Completed' ? 'Order delivered successfully. Salamat sa pag-order!' : 'Order status: ' + o.Order_Stat,
+                time: o.Order_Date ? new Date(o.Order_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                unread: ['Pending', 'Preparing', 'Ready', 'Delivering'].includes(o.Order_Stat),
+                action: () => { this.selectedOrder = o; this.activeTab = 'customer_orders'; this.showNotificationsDropdown = false; setTimeout(() => this.$nextTick(() => lucide.createIcons()), 100); }
+            }));
+        }
+        else if (this.role === 'Branch Manager' || this.role === 'Kitchen Staff') {
+            return (this.orders || []).slice(0, 15).map(o => ({
+                id: 'b_order_' + o.Order_ID + '_' + o.Order_Stat,
+                title: 'Order #' + o.Order_ID + ' (' + o.Order_Stat + ')',
+                body: o.Order_Stat === 'Pending' ? 'New incoming order is waiting for kitchen approval!' :
+                      o.Order_Stat === 'Preparing' ? 'Currently grilling that tasty chicken in the kitchen.' :
+                      o.Order_Stat === 'Ready' ? 'Food cooked! Waiting to assign a rider.' : 'Out with delivery rider.',
+                time: o.Order_Date ? new Date(o.Order_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                unread: o.Order_Stat === 'Pending',
+                action: () => { this.activeTab = 'orders'; this.showNotificationsDropdown = false; }
+            }));
+        }
+        else if (this.role === 'Driver') {
+            return (this.riderDeliveries || []).map(o => ({
+                id: 'drv_order_' + o.Order_ID + '_' + o.Order_Stat,
+                title: 'Active Delivery - Order #' + o.Order_ID,
+                body: 'Deliver to: ' + o.Add_StreetName + ', ' + o.Add_City + '. ETA: ' + (o.Dlvry_Current_ETA ? new Date(o.Dlvry_Current_ETA).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Not set yet'),
+                time: o.Order_Date ? new Date(o.Order_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                unread: true,
+                action: () => { this.activeTab = 'deliveries'; this.showNotificationsDropdown = false; }
+            }));
+        }
+        else {
+            return [
+                {
+                    id: 'admin_1',
+                    title: 'System Online',
+                    body: 'Mang Inasal Admin portal is operational. Monitoring active branches.',
+                    time: 'Just now',
+                    unread: false,
+                    action: () => { this.activeTab = 'overview'; this.showNotificationsDropdown = false; }
+                }
+            ];
+        }
+    },
 
     closeAllModals() {
         this.showBranchModal = false;
@@ -1086,10 +1138,52 @@ $user_id = $_SESSION['user_id'];
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <button class="p-2 bg-white rounded-xl shadow-sm border text-slate-400 hover:text-[#006738]">
-                    <i data-lucide="bell" class="w-5 h-5"></i>
-                </button>
+            <div class="flex items-center gap-4 relative" @click.outside="showNotificationsDropdown = false">
+                <!-- Notifications Bell wrapper -->
+                <div class="relative">
+                    <button @click="showNotificationsDropdown = !showNotificationsDropdown" class="p-2 bg-white rounded-xl shadow-sm border text-slate-400 hover:text-[#006738] relative transition-all active:scale-95 cursor-pointer flex items-center justify-center">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <!-- Unread alert bubble badge -->
+                        <template x-if="getNotifications().filter(n => n.unread).length > 0">
+                            <span class="absolute -top-1 -right-1 bg-[#ed1c24] text-white text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-black animate-pulse" x-text="getNotifications().filter(n => n.unread).length"></span>
+                        </template>
+                    </button>
+
+                    <!-- Notifications Dropdown Panel -->
+                    <div x-show="showNotificationsDropdown" 
+                         x-transition 
+                         x-cloak 
+                         class="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-[150] overflow-hidden max-h-96 flex flex-col">
+                        <div class="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50">
+                            <span class="font-black text-slate-800 text-sm tracking-tight font-poppins">Notifications</span>
+                            <template x-if="getNotifications().length > 0">
+                                <span class="text-[10px] font-black uppercase text-[#006738] bg-green-50 px-2.5 py-1 rounded-full" x-text="getNotifications().length + ' Total'"></span>
+                            </template>
+                        </div>
+                        <div class="overflow-y-auto divide-y divide-slate-50 flex-grow max-h-72">
+                            <template x-for="notif in getNotifications()" :key="notif.id">
+                                <div @click="notif.action()" class="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex items-start gap-3 text-left">
+                                    <div class="w-2 h-2 rounded-full mt-1.5 shrink-0" :class="notif.unread ? 'bg-[#ed1c24]' : 'bg-slate-300'"></div>
+                                    <div class="flex-grow space-y-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <h4 class="font-bold text-slate-800 text-xs tracking-tight" x-text="notif.title"></h4>
+                                            <span class="text-[9px] font-semibold text-slate-400 shrink-0" x-text="notif.time"></span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 leading-normal" x-text="notif.body"></p>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="getNotifications().length === 0">
+                                <div class="p-8 text-center text-slate-400 space-y-2">
+                                    <i data-lucide="bell-off" class="w-8 h-8 mx-auto text-slate-300"></i>
+                                    <p class="text-xs font-bold leading-none">No notifications yet.</p>
+                                    <p class="text-[10px] text-slate-400">Updates about orders or activities will appear here.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="w-10 h-10 bg-[#006738] rounded-xl flex items-center justify-center text-white font-bold">
                     <?php echo substr($role, 0, 1); ?>
                 </div>
