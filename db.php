@@ -15,6 +15,27 @@ $options = [
 
 try {
      $pdo = new PDO($dsn, $user, $pass, $options);
+     
+     // Automatic Schema Updates
+     // 1. Address columns
+     $columns = $pdo->query("SHOW COLUMNS FROM ADDRESS")->fetchAll(PDO::FETCH_COLUMN);
+     if (!in_array('Add_Brgy', $columns)) {
+         $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_Brgy VARCHAR(50) NOT NULL AFTER Add_City");
+     }
+     if (!in_array('Add_PostalCode', $columns)) {
+         $pdo->exec("ALTER TABLE ADDRESS ADD COLUMN Add_PostalCode VARCHAR(20) AFTER Add_Landmark");
+     }
+
+     // 2. Menu Item Branch mapping
+     $menu_items_columns = $pdo->query("SHOW COLUMNS FROM MENU_ITEM")->fetchAll(PDO::FETCH_COLUMN);
+     if (!in_array('Menu_Brnch_ID', $menu_items_columns)) {
+         try {
+             $pdo->exec("ALTER TABLE MENU_ITEM ADD COLUMN Menu_Brnch_ID INT NULL AFTER Menu_ID");
+             $pdo->exec("ALTER TABLE MENU_ITEM ADD FOREIGN KEY (Menu_Brnch_ID) REFERENCES BRANCH(Brnch_ID) ON DELETE CASCADE");
+         } catch (Exception $e) {
+             // Ignore error in case of redunant alterations
+         }
+     }
 } catch (\PDOException $e) {
      die("Database error: Please make sure you have run 'SOURCE database.sql' in your MySQL terminal. " . $e->getMessage());
 }

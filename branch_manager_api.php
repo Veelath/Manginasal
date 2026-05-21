@@ -80,9 +80,9 @@ try {
             SELECT m.*, IFNULL(bm.Is_Available, 'Y') as Is_Available 
             FROM MENU_ITEM m 
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
-            WHERE m.Menu_Status != 'D'
+            WHERE m.Menu_Status != 'D' AND (m.Menu_Brnch_ID IS NULL OR m.Menu_Brnch_ID = ?)
         ");
-        $stmt->execute([$branch_id]);
+        $stmt->execute([$branch_id, $branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_branch_workforce') {
@@ -252,6 +252,82 @@ try {
         $stmt->execute([$branch_id, $menu_id, $status, $status]);
 
         echo json_encode(['success' => true, 'message' => 'Availability updated!']);
+    }
+    elseif ($action === 'create_menu') {
+        $name = $data['name'] ?? '';
+        $desc = $data['desc'] ?? '';
+        $price = $data['price'] ?? 0;
+        $cat = $data['category'] ?? 'Chicken';
+        $size = $data['size'] ?? 'Standard';
+        $image = $data['image'] ?? '';
+
+        if (empty($name)) {
+            echo json_encode(['success' => false, 'message' => 'Product name required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Brnch_ID, Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size, Menu_Image) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$branch_id, $name, $desc, $price, $cat, $size, $image]);
+
+        $menu_id = $pdo->lastInsertId();
+        $stmt = $pdo->prepare("INSERT INTO BRANCH_MENU (Brnch_ID, Menu_ID, Is_Available) VALUES (?, ?, 'Y')");
+        $stmt->execute([$branch_id, $menu_id]);
+
+        echo json_encode(['success' => true, 'message' => 'Branch menu item added!']);
+    }
+    elseif ($action === 'update_menu') {
+        $id = $data['Menu_ID'] ?? null;
+        $name = $data['Menu_Name'] ?? '';
+        $desc = $data['Menu_Description'] ?? '';
+        $price = $data['Menu_Price'] ?? 0;
+        $cat = $data['Menu_Category'] ?? 'Chicken';
+        $size = $data['Menu_Size'] ?? 'Standard';
+        $image = $data['Menu_Image'] ?? '';
+
+        if (!$id || empty($name)) {
+            echo json_encode(['success' => false, 'message' => 'ID and name required.']);
+            exit;
+        }
+
+        // Verify ownership
+        $check = $pdo->prepare("SELECT Menu_Brnch_ID FROM MENU_ITEM WHERE Menu_ID = ?");
+        $check->execute([$id]);
+        $owner = $check->fetchColumn();
+        if ($owner != $branch_id) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only edit items created by your branch.']);
+            exit;
+        }
+
+        if (!empty($image)) {
+            $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Name = ?, Menu_Description = ?, Menu_Price = ?, Menu_Category = ?, Menu_Size = ?, Menu_Image = ? WHERE Menu_ID = ?");
+            $stmt->execute([$name, $desc, $price, $cat, $size, $image, $id]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Name = ?, Menu_Description = ?, Menu_Price = ?, Menu_Category = ?, Menu_Size = ? WHERE Menu_ID = ?");
+            $stmt->execute([$name, $desc, $price, $cat, $size, $id]);
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Branch menu item updated!']);
+    }
+    elseif ($action === 'delete_menu') {
+        $id = $data['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID required.']);
+            exit;
+        }
+
+        // Verify ownership
+        $check = $pdo->prepare("SELECT Menu_Brnch_ID FROM MENU_ITEM WHERE Menu_ID = ?");
+        $check->execute([$id]);
+        $owner = $check->fetchColumn();
+        if ($owner != $branch_id) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only delete items created by your branch.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Status = 'D' WHERE Menu_ID = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode(['success' => true, 'message' => 'Branch menu item removed!']);
     }
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);

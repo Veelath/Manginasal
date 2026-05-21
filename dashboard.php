@@ -22,6 +22,19 @@ $user_id = $_SESSION['user_id'];
         .font-outfit { font-family: 'Outfit', sans-serif; }
         .font-poppins { font-family: 'Poppins', sans-serif; }
         [x-cloak] { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-[#fcfbf7] font-outfit min-h-screen overscroll-none" x-data="{ 
@@ -160,6 +173,40 @@ $user_id = $_SESSION['user_id'];
                 }
             ];
         }
+    },
+
+    compressAndResizeImage(file, maxDim = 400, quality = 0.75) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > maxDim) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        }
+                    } else {
+                        if (height > maxDim) {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+            };
+        });
     },
 
     closeAllModals() {
@@ -741,14 +788,19 @@ $user_id = $_SESSION['user_id'];
     },
 
     async submitMenu() {
-        const res = await fetch('system_admin_api.php', {
+        const api = (this.role === 'System Admin') ? 'system_admin_api.php' : 'branch_manager_api.php';
+        const res = await fetch(api, {
             method: 'POST',
             body: JSON.stringify({ action: 'create_menu', ...this.newMenu })
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) {
-            this.fetchMenu();
+            if (this.role === 'System Admin') {
+                this.fetchMenu();
+            } else {
+                this.fetchBranchMenu();
+            }
             this.showMenuModal = false;
             this.newMenu = { name: '', desc: '', price: 0, category: 'Chicken', size: 'Standard', image: '' };
         }
@@ -763,6 +815,17 @@ $user_id = $_SESSION['user_id'];
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) this.fetchMenu();
+    },
+
+    async deleteBranchMenuItem(id) {
+        if(!confirm('Are you sure you want to delete this branch menu item?')) return;
+        const res = await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_menu', id })
+        });
+        const data = await res.json();
+        this.message = { success: data.success, text: data.message };
+        if(data.success) this.fetchBranchMenu();
     },
 
     async updateMenuStatus(id, status) {
@@ -869,14 +932,19 @@ $user_id = $_SESSION['user_id'];
 
     openEditMenu(item) { this.editingMenu = { ...item }; this.showEditMenuModal = true; },
     async submitEditMenu() {
-        const res = await fetch('system_admin_api.php', {
+        const api = (this.role === 'System Admin') ? 'system_admin_api.php' : 'branch_manager_api.php';
+        const res = await fetch(api, {
             method: 'POST',
             body: JSON.stringify({ action: 'update_menu', ...this.editingMenu })
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) {
-            this.fetchMenu();
+            if (this.role === 'System Admin') {
+                this.fetchMenu();
+            } else {
+                this.fetchBranchMenu();
+            }
             this.showEditMenuModal = false;
         }
     },
@@ -898,30 +966,42 @@ $user_id = $_SESSION['user_id'];
 
     openEditStaff(staff) { this.editingStaff = { ...staff }; this.showEditStaffModal = true; },
     async submitEditStaff() {
-        const res = await fetch('branch_manager_api.php', {
+        const api = (this.role === 'System Admin') ? 'system_admin_api.php' : 'branch_manager_api.php';
+        const res = await fetch(api, {
             method: 'POST',
             body: JSON.stringify({ action: 'update_staff', ...this.editingStaff })
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) {
-            this.fetchWorkforce();
-            this.fetchBranchStats();
+            if (this.role === 'System Admin') {
+                this.fetchStaff();
+                this.fetchAllUsers();
+            } else {
+                this.fetchWorkforce();
+                this.fetchBranchStats();
+            }
             this.showEditStaffModal = false;
         }
     },
 
     openEditRider(rider) { this.editingRider = { ...rider }; this.showEditRiderModal = true; },
     async submitEditRider() {
-        const res = await fetch('branch_manager_api.php', {
+        const api = (this.role === 'System Admin') ? 'system_admin_api.php' : 'branch_manager_api.php';
+        const res = await fetch(api, {
             method: 'POST',
             body: JSON.stringify({ action: 'update_rider', ...this.editingRider })
         });
         const data = await res.json();
         this.message = { success: data.success, text: data.message };
         if(data.success) {
-            this.fetchWorkforce();
-            this.fetchBranchStats();
+            if (this.role === 'System Admin') {
+                this.fetchRiders();
+                this.fetchAllUsers();
+            } else {
+                this.fetchWorkforce();
+                this.fetchBranchStats();
+            }
             this.showEditRiderModal = false;
         }
     },
@@ -2008,72 +2088,7 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
-        <div x-show="showMenuModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
-            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showMenuModal = false">
-                <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
-                    <h3 class="font-black text-xl font-poppins capitalize">Add Global Menu Item</h3>
-                    <button @click="showMenuModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Name</label>
-                        <input type="text" x-model="newMenu.name" placeholder="PM1 - Paa" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
-                        <textarea x-model="newMenu.desc" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none h-24"></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Price</label>
-                            <input type="number" x-model="newMenu.price" step="0.01" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                        </div>
-                        <div>
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
-                            <select x-model="newMenu.category" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                                <option>Chicken</option>
-                                <option>Pork</option>
-                                <option>Family Fiesta</option>
-                                <option>Buddy Fiesta</option>
-                                <option>Dessert</option>
-                                <option>Palabok</option>
-                                <option>Drinks</option>
-                                <option>Sides</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Size</label>
-                        <select x-model="newMenu.size" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
-                            <option>Standard</option>
-                            <option>1-pc</option>
-                            <option>2-pc</option>
-                            <option>Family Size</option>
-                            <option>Solong</option>
-                            <option>Sizling</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Image</label>
-                        <div class="mt-2 flex items-center gap-4">
-                            <div class="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-                                <template x-if="newMenu.image">
-                                    <img :src="newMenu.image" class="w-full h-full object-cover">
-                                </template>
-                                <template x-if="!newMenu.image">
-                                    <i data-lucide="image" class="w-6 h-6 text-slate-300"></i>
-                                </template>
-                            </div>
-                            <div class="flex-1">
-                                <input type="file" @change="let file = $event.target.files[0]; let reader = new FileReader(); reader.onload = (e) => { newMenu.image = e.target.result }; reader.readAsDataURL(file)" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-black">Upload a picture of the menu item</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button @click="submitMenu()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform">Save Product</button>
-                </div>
-            </div>
-        </div>
+
         <?php endif; ?>
 
         <!-- Branch Manager Tabs -->
@@ -2357,33 +2372,63 @@ $user_id = $_SESSION['user_id'];
 
         <?php if ($role === 'Branch Manager'): ?>
         <div x-show="activeTab === 'availability'" x-cloak>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 font-poppins">Menu Availability</h2>
-                <p class="text-slate-500 text-sm">Toggle items based on current stock.</p>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Menu & Stock Availability</h2>
+                    <p class="text-slate-500 text-sm">Toggle item availability or manage branch-specific items.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="fetchBranchMenu()" class="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl active:scale-95 transition-all text-slate-600">
+                        <i data-lucide="refresh-cw" class="w-4.5 h-4.5"></i>
+                    </button>
+                    <button @click="showMenuModal = true" class="bg-[#006738] text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] shadow-lg shadow-green-900/10 transition-all active:scale-95">
+                        <i data-lucide="plus-circle" class="w-4.5 h-4.5"></i>
+                        <span>Add Custom Item</span>
+                    </button>
+                </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <template x-for="item in menuItems" :key="item.Menu_ID">
-                    <div :class="item.Is_Available === 'Y' ? 'border-green-100 bg-white' : 'border-red-100 bg-red-50/10 opacity-75'" class="p-6 rounded-3xl border-2 transition-all">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center text-slate-300">
-                                <template x-if="item.Menu_Image">
-                                    <img :src="item.Menu_Image" class="w-full h-full object-cover">
-                                </template>
-                                <template x-if="!item.Menu_Image">
-                                    <i data-lucide="utensils" class="w-5 h-5"></i>
+                    <div :class="item.Is_Available === 'Y' ? 'border-green-100 bg-white' : 'border-red-100 bg-red-50/10 opacity-75'" class="p-6 rounded-3xl border-2 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center text-slate-300">
+                                    <template x-if="item.Menu_Image">
+                                        <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!item.Menu_Image">
+                                        <i data-lucide="utensils" class="w-5 h-5"></i>
+                                    </template>
+                                </div>
+                                <button @click="toggleAvailability(item.Menu_ID, item.Is_Available)" 
+                                        :class="item.Is_Available === 'Y' ? 'bg-[#006738]' : 'bg-red-500'" 
+                                        class="w-12 h-6 rounded-full relative transition-colors">
+                                    <div :class="item.Is_Available === 'Y' ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span x-text="item.Menu_Category" class="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-1 rounded-lg"></span>
+                                <template x-if="item.Menu_Brnch_ID !== null">
+                                    <span class="text-[9px] font-black uppercase text-green-700 bg-green-100 px-2 py-1 rounded-lg">Custom</span>
                                 </template>
                             </div>
-                            <button @click="toggleAvailability(item.Menu_ID, item.Is_Available)" 
-                                    :class="item.Is_Available === 'Y' ? 'bg-[#006738]' : 'bg-red-500'" 
-                                    class="w-12 h-6 rounded-full relative transition-colors">
-                                <div :class="item.Is_Available === 'Y' ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
-                            </button>
+                            <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
+                            <p class="text-xs text-slate-400 line-clamp-2 mb-2" x-text="item.Menu_Description || ''"></p>
+                            <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
                         </div>
-                        <div class="mb-4">
-                             <span x-text="item.Menu_Category" class="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-1 rounded-lg"></span>
-                        </div>
-                        <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
-                        <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
+                        
+                        <!-- Actions if custom branch item -->
+                        <template x-if="item.Menu_Brnch_ID !== null">
+                            <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                                <button @click="openEditMenu(item)" class="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button @click="deleteBranchMenuItem(item.Menu_ID)" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </template>
                     </div>
                 </template>
             </div>
@@ -2701,33 +2746,38 @@ $user_id = $_SESSION['user_id'];
                     </div>
 
                     <!-- Cart Content -->
-                    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
+                    <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-3.5 bg-slate-50/50">
                         <template x-for="(item, index) in cart" :key="index">
-                            <div class="group flex gap-5 bg-white p-5 rounded-[2rem] border-2 border-slate-50 hover:border-[#ffec00]/30 transition-all shadow-sm">
-                                <div class="w-20 h-20 bg-slate-50 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <div class="group flex gap-4 bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-green-200 transition-all shadow-xs">
+                                <div class="w-14 h-14 bg-slate-50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform">
                                     <template x-if="item.Menu_Image">
                                         <img :src="item.Menu_Image" class="w-full h-full object-cover">
                                     </template>
                                     <template x-if="!item.Menu_Image">
-                                        <i data-lucide="utensils" class="w-8 h-8 text-slate-200"></i>
+                                        <i data-lucide="utensils" class="w-6 h-6 text-slate-200"></i>
                                     </template>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <p class="text-base font-black text-slate-800 truncate" x-text="item.Menu_Name"></p>
-                                        <button @click="cart.splice(index, 1)" class="text-slate-300 hover:text-red-500 transition-colors">
-                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <div class="flex-1 min-w-0 flex flex-col justify-between">
+                                    <div class="flex justify-between items-start gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-black text-slate-800 truncate leading-tight" x-text="item.Menu_Name"></p>
+                                            <div class="flex items-center gap-1.5 mt-1">
+                                                <span class="text-[9px] font-black uppercase text-green-700 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100" x-text="item.size || 'Standard'"></span>
+                                                <span class="text-[10px] font-bold text-slate-400" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></span>
+                                            </div>
+                                        </div>
+                                        <button @click="cart.splice(index, 1)" class="text-slate-300 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                         </button>
                                     </div>
-                                    <p class="text-xs font-black text-[#006738] mb-4" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
                                     
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-100">
-                                            <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] transition-all">-</button>
-                                            <span class="w-10 text-center text-sm font-black text-slate-800" x-text="item.qty"></span>
-                                            <button @click="item.qty++" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] transition-all">+</button>
+                                    <div class="flex items-center justify-between mt-2.5">
+                                        <div class="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-100">
+                                            <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-red-500 text-xs font-black transition-all">-</button>
+                                            <span class="w-8 text-center text-xs font-black text-slate-800" x-text="item.qty"></span>
+                                            <button @click="item.qty++" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] text-xs font-black transition-all">+</button>
                                         </div>
-                                        <span class="text-lg font-black text-[#006738] drop-shadow-sm" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
+                                        <span class="text-sm font-black text-[#006738]" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
                                     </div>
                                 </div>
                             </div>
@@ -3213,11 +3263,79 @@ $user_id = $_SESSION['user_id'];
             </div>
         </div>
 
+        <!-- Create Menu Modal -->
+        <div x-show="showMenuModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showMenuModal = false">
+                <div class="p-6 bg-[#006738] text-white flex justify-between items-center">
+                    <h3 class="font-black text-xl font-poppins capitalize" x-text="role === 'System Admin' ? 'Add Global Menu Item' : 'Add Branch Menu Item'"></h3>
+                    <button @click="showMenuModal = false"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Name</label>
+                        <input type="text" x-model="newMenu.name" placeholder="PM1 - Paa" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                        <textarea x-model="newMenu.desc" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none h-24"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Price</label>
+                            <input type="number" x-model="newMenu.price" step="0.01" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                            <select x-model="newMenu.category" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                                <option>Chicken</option>
+                                <option>Pork</option>
+                                <option>Family Fiesta</option>
+                                <option>Buddy Fiesta</option>
+                                <option>Dessert</option>
+                                <option>Palabok</option>
+                                <option>Drinks</option>
+                                <option>Sides</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Size</label>
+                        <select x-model="newMenu.size" class="w-full bg-[#f1f5f1] border-2 border-transparent focus:border-[#006738] rounded-2xl py-3 px-4 outline-none">
+                            <option>Standard</option>
+                            <option>1-pc</option>
+                            <option>2-pc</option>
+                            <option>Family Size</option>
+                            <option>Solong</option>
+                            <option>Sizling</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Image</label>
+                        <div class="mt-2 flex items-center gap-4">
+                            <div class="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                                <template x-if="newMenu.image">
+                                    <img :src="newMenu.image" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!newMenu.image">
+                                    <i data-lucide="image" class="w-6 h-6 text-slate-300"></i>
+                                </template>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 400, 0.75).then(base64 => { newMenu.image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-black">Upload picture of the menu item</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="submitMenu()" class="w-full bg-[#006738] text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform" x-text="role === 'System Admin' ? 'Save Global Product' : 'Save Branch Product'"></button>
+                </div>
+            </div>
+        </div>
+
         <!-- Edit Menu Modal -->
         <div x-show="showEditMenuModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" x-cloak x-transition>
             <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" @click.away="showEditMenuModal = false">
                 <div class="bg-[#006738] p-6 text-white flex justify-between items-center">
-                    <h3 class="text-xl font-black font-poppins">Edit Global Item</h3>
+                    <h3 class="text-xl font-black font-poppins" x-text="role === 'System Admin' ? 'Edit Global Item' : 'Edit Branch Item'"></h3>
                     <button @click="showEditMenuModal = false" class="hover:rotate-90 transition-transform">
                         <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
@@ -3226,6 +3344,10 @@ $user_id = $_SESSION['user_id'];
                     <div>
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Product Name</label>
                         <input type="text" x-model="editingMenu.Menu_Name" class="w-full p-3 rounded-xl border-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Description</label>
+                        <textarea x-model="editingMenu.Menu_Description" class="w-full p-3 rounded-xl border-slate-200 h-20 outline-none"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Category</label>
@@ -3245,8 +3367,23 @@ $user_id = $_SESSION['user_id'];
                             <input type="text" x-model="editingMenu.Menu_Size" class="w-full p-3 rounded-xl border-slate-200">
                         </div>
                     </div>
-                    <button @click="submitEditMenu" class="w-full bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all">
-                        Update Global Menu
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Item Image</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center text-slate-300">
+                                <template x-if="editingMenu.Menu_Image">
+                                    <img :src="editingMenu.Menu_Image" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!editingMenu.Menu_Image">
+                                    <i data-lucide="utensils" class="w-6 h-6"></i>
+                                </template>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 400, 0.75).then(base64 => { editingMenu.Menu_Image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="submitEditMenu" class="w-full bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all" x-text="role === 'System Admin' ? 'Update Global Menu' : 'Update Branch Menu'">
                     </button>
                 </div>
             </div>

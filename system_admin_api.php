@@ -350,6 +350,41 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'User deleted successfully!']);
     }
+    elseif ($action === 'update_staff') {
+        $id = $data['id'] ?? null;
+        $fname = $data['fname'] ?? '';
+        $lname = $data['lname'] ?? '';
+        $email = $data['email'] ?? '';
+        $mobile = $data['mobile'] ?? '';
+        $role = $data['role'] ?? 'Kitchen Staff';
+
+        if (!$id || empty($fname) || empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'ID, name, and email required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE STAFF SET Staff_FName = ?, Staff_LName = ?, Staff_Email = ?, Staff_MobileNum = ?, Staff_Role = ? WHERE Staff_ID = ?");
+        $stmt->execute([$fname, $lname, $email, $mobile, $role, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Staff updated successfully!']);
+    }
+    elseif ($action === 'update_rider') {
+        $id = $data['id'] ?? null;
+        $fname = $data['fname'] ?? '';
+        $lname = $data['lname'] ?? '';
+        $email = $data['email'] ?? '';
+        $mobile = $data['mobile'] ?? '';
+
+        if (!$id || empty($fname) || empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'ID, name, and email required.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE RIDER SET Rider_FName = ?, Rider_LName = ?, Rider_Email = ?, Rider_MobileNum = ? WHERE Rider_ID = ?");
+        $stmt->execute([$fname, $lname, $email, $mobile, $id]);
+
+        echo json_encode(['success' => true, 'message' => 'Rider updated successfully!']);
+    }
 } catch (Exception $e) {
      echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }

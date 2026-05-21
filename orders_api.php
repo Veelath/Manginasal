@@ -40,9 +40,11 @@ try {
             SELECT m.* 
             FROM MENU_ITEM m 
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
-            WHERE m.Menu_Status = 'Y' AND (bm.Is_Available IS NULL OR bm.Is_Available = 'Y')
+            WHERE m.Menu_Status = 'Y' 
+              AND (m.Menu_Brnch_ID IS NULL OR m.Menu_Brnch_ID = ?)
+              AND (bm.Is_Available IS NULL OR bm.Is_Available = 'Y')
         ");
-        $stmt->execute([$branch_id]);
+        $stmt->execute([$branch_id, $branch_id]);
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'place_order') {
