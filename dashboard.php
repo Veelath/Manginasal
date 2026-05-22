@@ -2243,7 +2243,7 @@ $user_id = $_SESSION['user_id'];
                                 <div class="flex gap-2">
                                     <!-- Transitions: Restricted to Kitchen Staff per user request -->
                                     <template x-if="order.Order_Stat === 'Pending' && role === 'Kitchen Staff'">
-                                        <button @click="updateOrderStatus(order.Order_ID, 'Preparing')" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-bold text-xs">Start Cooking</button>
+                                        <button @click="updateOrderStatus(order.Order_ID, 'Preparing')" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-bold text-xs">Start Preparing</button>
                                     </template>
                                     <template x-if="order.Order_Stat === 'Preparing' && role === 'Kitchen Staff'">
                                         <button @click="updateOrderStatus(order.Order_ID, 'Ready')" class="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition-all font-bold text-xs">Mark as Ready</button>
@@ -3120,7 +3120,7 @@ $user_id = $_SESSION['user_id'];
 
                                     <div class="flex justify-between text-[7px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
                                         <span>Ordered</span>
-                                        <span>Cooking</span>
+                                        <span>Preparing</span>
                                         <span>Ready</span>
                                         <span>On Way</span>
                                         <span>Enjoy!</span>
