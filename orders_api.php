@@ -37,7 +37,7 @@ try {
     elseif ($action === 'get_branch_menu') {
         $branch_id = $data['branch_id'];
         $stmt = $pdo->prepare("
-            SELECT m.* 
+            SELECT m.*, IFNULL(bm.Stock_Qty, 50) as Stock_Qty 
             FROM MENU_ITEM m 
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
             WHERE m.Menu_Status = 'Y' 
@@ -162,6 +162,14 @@ try {
                 $order_id, $idx + 1, $item['menu_id'], $item['price'], 
                 $item['price'], $item['qty']
             ]);
+
+            // Decrement branch menu stock quantity (insert record on conflict/fallback if global item with no previous record)
+            $stmtStock = $pdo->prepare("
+                INSERT INTO BRANCH_MENU (Brnch_ID, Menu_ID, Is_Available, Stock_Qty)
+                VALUES (?, ?, 'Y', GREATEST(0, 50 - ?))
+                ON DUPLICATE KEY UPDATE Stock_Qty = GREATEST(0, Stock_Qty - ?)
+            ");
+            $stmtStock->execute([$branch_id, $item['menu_id'], $item['qty'], $item['qty']]);
         }
 
         $pdo->commit();

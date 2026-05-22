@@ -36,6 +36,16 @@ try {
              // Ignore error in case of redunant alterations
          }
      }
+
+     // 3. Branch Menu stock level column
+     $branch_menu_columns = $pdo->query("SHOW COLUMNS FROM BRANCH_MENU")->fetchAll(PDO::FETCH_COLUMN);
+     if (!in_array('Stock_Qty', $branch_menu_columns)) {
+         try {
+             $pdo->exec("ALTER TABLE BRANCH_MENU ADD COLUMN Stock_Qty INT NOT NULL DEFAULT 50");
+         } catch (Exception $e) {
+             // Ignore error in case of redundant alterations
+         }
+     }
 } catch (\PDOException $e) {
      die("Database error: Please make sure you have run 'SOURCE database.sql' in your MySQL terminal. " . $e->getMessage());
 }

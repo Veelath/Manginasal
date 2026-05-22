@@ -77,7 +77,7 @@ try {
     elseif ($action === 'get_menu_availability') {
         // Get all menu items and their status for this branch (excluding soft-deleted)
         $stmt = $pdo->prepare("
-            SELECT m.*, IFNULL(bm.Is_Available, 'Y') as Is_Available 
+            SELECT m.*, IFNULL(bm.Is_Available, 'Y') as Is_Available, IFNULL(bm.Stock_Qty, 50) as Stock_Qty 
             FROM MENU_ITEM m 
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
             WHERE m.Menu_Status != 'D' AND (m.Menu_Brnch_ID IS NULL OR m.Menu_Brnch_ID = ?)
@@ -252,6 +252,15 @@ try {
         $stmt->execute([$branch_id, $menu_id, $status, $status]);
 
         echo json_encode(['success' => true, 'message' => 'Availability updated!']);
+    }
+    elseif ($action === 'update_stock') {
+        $menu_id = $data['menu_id'];
+        $stock = intval($data['stock'] ?? 0);
+
+        $stmt = $pdo->prepare("INSERT INTO BRANCH_MENU (Brnch_ID, Menu_ID, Stock_Qty) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE Stock_Qty = ?");
+        $stmt->execute([$branch_id, $menu_id, $stock, $stock]);
+
+        echo json_encode(['success' => true, 'message' => 'Inventory updated!']);
     }
     elseif ($action === 'create_menu') {
         $name = $data['name'] ?? '';

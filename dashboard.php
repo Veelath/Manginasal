@@ -383,6 +383,13 @@ $user_id = $_SESSION['user_id'];
     },
 
     addToCart(item) {
+        if (item.Stock_Qty !== undefined && item.Stock_Qty !== null) {
+            const qtyInCart = this.cart.filter(i => i.Menu_ID === item.Menu_ID).reduce((acc, curr) => acc + curr.qty, 0);
+            if (qtyInCart >= item.Stock_Qty) {
+                this.message = { success: false, text: "Sorry, this product's branch inventory is depleted." };
+                return;
+            }
+        }
         // Simple logic for categories that need options
         const needsOptions = item.Menu_Category === 'Dessert' || item.Menu_Name.toLowerCase().includes('drink') || item.Menu_Name.toLowerCase().includes('halo');
         
@@ -760,6 +767,16 @@ $user_id = $_SESSION['user_id'];
         if(data.success) this.fetchBranchMenu();
     },
 
+    async updateStock(menuId, stockQty) {
+        if (stockQty === undefined || stockQty === null || isNaN(stockQty) || stockQty < 0) {
+            stockQty = 0;
+        }
+        await fetch('branch_manager_api.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'update_stock', menu_id: menuId, stock: stockQty })
+        });
+    },
+
     async updateManagerStatus(id, status) {
         const res = await fetch('system_admin_api.php', {
             method: 'POST',
@@ -1063,19 +1080,13 @@ $user_id = $_SESSION['user_id'];
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                 <span x-show="sidebarOpen" class="font-bold text-sm">Dashboard</span>
             </a>
-
+            
             <?php if ($role === 'System Admin'): ?>
                 <a href="#" @click="activeTab = 'branches'" 
                    :class="activeTab === 'branches' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
                     <i data-lucide="store" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">Branches</span>
-                </a>
-                <a href="#" @click="activeTab = 'menu'" 
-                   :class="activeTab === 'menu' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
-                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
-                    <i data-lucide="utensils-cross-lines" class="w-5 h-5"></i>
-                    <span x-show="sidebarOpen" class="font-bold text-sm">Global Menu</span>
                 </a>
                 <a href="#" @click="activeTab = 'manage_managers'" 
                    :class="activeTab === 'manage_managers' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
@@ -2374,8 +2385,8 @@ $user_id = $_SESSION['user_id'];
         <div x-show="activeTab === 'availability'" x-cloak>
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Menu & Stock Availability</h2>
-                    <p class="text-slate-500 text-sm">Toggle item availability or manage branch-specific items.</p>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Branch Menu & Inventory</h2>
+                    <p class="text-slate-500 text-sm">Update product availability, track remaining stock, and add branch-specific dishes.</p>
                 </div>
                 <div class="flex gap-2">
                     <button @click="fetchBranchMenu()" class="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl active:scale-95 transition-all text-slate-600">
@@ -2383,13 +2394,13 @@ $user_id = $_SESSION['user_id'];
                     </button>
                     <button @click="showMenuModal = true" class="bg-[#006738] text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] shadow-lg shadow-green-900/10 transition-all active:scale-95">
                         <i data-lucide="plus-circle" class="w-4.5 h-4.5"></i>
-                        <span>Add Custom Item</span>
+                        <span>Add Menu Item</span>
                     </button>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <template x-for="item in menuItems" :key="item.Menu_ID">
-                    <div :class="item.Is_Available === 'Y' ? 'border-green-100 bg-white' : 'border-red-100 bg-red-50/10 opacity-75'" class="p-6 rounded-3xl border-2 transition-all flex flex-col justify-between">
+                    <div :class="item.Is_Available === 'Y' && parseInt(item.Stock_Qty || 0) > 0 ? 'border-green-100 bg-white' : 'border-red-100 bg-red-50/10 opacity-75'" class="p-6 rounded-3xl border-2 transition-all flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-start mb-4">
                                 <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center text-slate-300">
@@ -2415,6 +2426,19 @@ $user_id = $_SESSION['user_id'];
                             <h3 class="font-bold text-slate-800 mb-1" x-text="item.Menu_Name"></h3>
                             <p class="text-xs text-slate-400 line-clamp-2 mb-2" x-text="item.Menu_Description || ''"></p>
                             <p class="text-lg font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></p>
+
+                            <!-- Branch Stock & Inventory Counter -->
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase text-slate-400">Inventory Stock:</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="if(parseInt(item.Stock_Qty || 0) > 0) { item.Stock_Qty = parseInt(item.Stock_Qty) - 1; updateStock(item.Menu_ID, item.Stock_Qty); }" class="w-7 h-7 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer transition-colors">-</button>
+                                    <input type="number" 
+                                           x-model.number="item.Stock_Qty" 
+                                           @change="if(isNaN(item.Stock_Qty) || item.Stock_Qty < 0) item.Stock_Qty = 0; updateStock(item.Menu_ID, item.Stock_Qty)" 
+                                           class="w-11 text-center text-xs font-bold font-mono bg-slate-100 text-slate-800 border-0 rounded-lg p-1 outline-none">
+                                    <button @click="item.Stock_Qty = parseInt(item.Stock_Qty || 0) + 1; updateStock(item.Menu_ID, item.Stock_Qty);" class="w-7 h-7 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer transition-colors">+</button>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Actions if custom branch item -->
@@ -2688,6 +2712,15 @@ $user_id = $_SESSION['user_id'];
                                     <div>
                                         <h4 class="font-black text-slate-800 font-poppins text-lg" x-text="item.Menu_Name"></h4>
                                         <p class="text-xs text-slate-400 font-medium line-clamp-2 mt-1" x-text="item.Menu_Description"></p>
+                                        <!-- Stock Level Badge -->
+                                        <div class="mt-2 flex items-center">
+                                            <template x-if="item.Stock_Qty !== undefined && item.Stock_Qty !== null">
+                                                <span :class="item.Stock_Qty > 0 ? (item.Stock_Qty <= 10 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200') : 'bg-red-50 text-red-700 border-red-200'"
+                                                      class="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border">
+                                                    <span x-text="item.Stock_Qty > 0 ? (item.Stock_Qty <= 10 ? '🔥 Limited: ' + item.Stock_Qty + ' left' : 'In Stock: ' + item.Stock_Qty) : '🚫 Out of Stock'"></span>
+                                                </span>
+                                            </template>
+                                        </div>
                                     </div>
                                     
                                     <div class="flex items-center justify-between pt-4 border-t border-slate-50">
@@ -2695,9 +2728,14 @@ $user_id = $_SESSION['user_id'];
                                             <p class="text-[10px] font-black uppercase text-slate-300">Price Starts</p>
                                             <p class="text-xl font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></p>
                                         </div>
-                                        <button @click="addToCart(item)" class="w-12 h-12 bg-[#ffec00] text-black rounded-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-yellow-500/20">
-                                            <i data-lucide="plus" class="w-6 h-6"></i>
-                                        </button>
+                                        <template x-if="item.Stock_Qty === undefined || item.Stock_Qty === null || item.Stock_Qty > 0">
+                                            <button @click="addToCart(item)" class="w-12 h-12 bg-[#ffec00] text-black rounded-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-yellow-500/20">
+                                                <i data-lucide="plus" class="w-6 h-6"></i>
+                                            </button>
+                                        </template>
+                                        <template x-if="item.Stock_Qty !== undefined && item.Stock_Qty !== null && item.Stock_Qty <= 0">
+                                            <span class="px-3 py-2 bg-red-100 text-red-700 text-[10px] font-black uppercase tracking-wider rounded-xl">Sold Out</span>
+                                        </template>
                                     </div>
                                 </div>
                             </div>
