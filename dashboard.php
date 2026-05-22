@@ -2746,42 +2746,47 @@ $user_id = $_SESSION['user_id'];
                     </div>
 
                     <!-- Cart Content -->
-                    <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-3.5 bg-slate-50/50">
-                        <template x-for="(item, index) in cart" :key="index">
-                            <div class="group flex gap-4 bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-green-200 transition-all shadow-xs">
-                                <div class="w-14 h-14 bg-slate-50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform">
-                                    <template x-if="item.Menu_Image">
-                                        <img :src="item.Menu_Image" class="w-full h-full object-cover">
-                                    </template>
-                                    <template x-if="!item.Menu_Image">
-                                        <i data-lucide="utensils" class="w-6 h-6 text-slate-200"></i>
-                                    </template>
-                                </div>
-                                <div class="flex-1 min-w-0 flex flex-col justify-between">
-                                    <div class="flex justify-between items-start gap-2">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-black text-slate-800 truncate leading-tight" x-text="item.Menu_Name"></p>
-                                            <div class="flex items-center gap-1.5 mt-1">
-                                                <span class="text-[9px] font-black uppercase text-green-700 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100" x-text="item.size || 'Standard'"></span>
-                                                <span class="text-[10px] font-bold text-slate-400" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></span>
+                    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5 bg-slate-50/50">
+                        <!-- Food Items List -->
+                        <div class="space-y-3">
+                            <template x-for="(item, index) in cart" :key="index">
+                                <div class="group flex gap-4 bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-green-200 transition-all shadow-xs">
+                                    <div class="w-14 h-14 bg-slate-50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform">
+                                        <template x-if="item.Menu_Image">
+                                            <img :src="item.Menu_Image" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!item.Menu_Image">
+                                            <i data-lucide="utensils" class="w-6 h-6 text-slate-200"></i>
+                                        </template>
+                                    </div>
+                                    <div class="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div class="flex justify-between items-start gap-2">
+                                            <div class="min-w-0 col-span-1">
+                                                <p class="text-sm font-black text-slate-800 truncate leading-tight" x-text="item.Menu_Name"></p>
+                                                <div class="flex items-center gap-1.5 mt-1">
+                                                    <span class="text-[9px] font-black uppercase text-green-700 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100" x-text="item.size || 'Standard'"></span>
+                                                    <span class="text-[10px] font-bold text-slate-400" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(0)"></span>
+                                                </div>
                                             </div>
+                                            <button @click="cart.splice(index, 1)" class="text-slate-300 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </button>
                                         </div>
-                                        <button @click="cart.splice(index, 1)" class="text-slate-300 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors">
-                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="flex items-center justify-between mt-2.5">
-                                        <div class="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-100">
-                                            <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-red-500 text-xs font-black transition-all">-</button>
-                                            <span class="w-8 text-center text-xs font-black text-slate-800" x-text="item.qty"></span>
-                                            <button @click="item.qty++" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] text-xs font-black transition-all">+</button>
+                                        
+                                        <div class="flex items-center justify-between mt-2.5">
+                                            <div class="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-100">
+                                                <button @click="item.qty > 1 ? item.qty-- : cart.splice(index, 1)" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-red-500 text-xs font-black transition-all">-</button>
+                                                <span class="w-8 text-center text-xs font-black text-slate-800" x-text="item.qty"></span>
+                                                <button @click="item.qty++" class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-400 hover:text-[#006738] text-xs font-black transition-all">+</button>
+                                            </div>
+                                            <span class="text-sm font-black text-[#006738]" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
                                         </div>
-                                        <span class="text-sm font-black text-[#006738]" x-text="'₱' + (item.qty * item.Menu_Price).toFixed(0)"></span>
                                     </div>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
+
+                        <!-- Empty State -->
                         <template x-if="cart.length === 0">
                             <div class="py-20 text-center">
                                 <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
@@ -2791,53 +2796,100 @@ $user_id = $_SESSION['user_id'];
                                 <button @click="showCartTray = false" class="mt-6 text-[#006738] font-black text-xs uppercase underline">Back to Menu</button>
                             </div>
                         </template>
-                    </div>
 
-                    <!-- Cart Footer -->
-                    <div class="p-8 bg-[#f8faf8] border-t border-slate-100 space-y-6 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <button @click="orderType = 'Delivery'" 
-                                        :class="orderType === 'Delivery' ? 'bg-[#006738] text-white shadow-lg shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100'"
-                                        class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Delivery</button>
-                                <button @click="orderType = 'Take-out'" 
-                                        :class="orderType === 'Take-out' ? 'bg-[#006738] text-white shadow-lg shadow-green-900/20' : 'bg-white text-slate-400 border border-slate-100'"
-                                        class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Pickup</button>
-                            </div>
-                            
-                            <div class="bg-white p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
-                                <div x-show="orderType === 'Delivery'" class="space-y-3">
-                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Delivery Address</p>
-                                    
-                                    <div class="space-y-2">
-                                        <input type="text" x-model="manualAddress.street" placeholder="Street / House No." @input="useCurrentAddress = false"
-                                               class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <input type="text" x-model="manualAddress.brgy" placeholder="Barangay" @input="useCurrentAddress = false"
+                        <!-- Checkout Form Inside Scrollable Tray Area (coexisting with scroll) -->
+                        <template x-if="cart.length > 0">
+                            <div class="space-y-4 pt-2">
+                                <div class="relative">
+                                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                                        <div class="w-full border-t border-slate-200"></div>
+                                    </div>
+                                    <div class="relative flex justify-center">
+                                        <span class="bg-slate-50/50 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Checkout Options</span>
+                                    </div>
+                                </div>
+
+                                <!-- Order Type Selector (Delivery / Pickup) -->
+                                <div class="grid grid-cols-2 gap-2 bg-slate-200/50 p-1 rounded-2xl border border-slate-100">
+                                    <button @click="orderType = 'Delivery'" 
+                                            :class="orderType === 'Delivery' ? 'bg-[#006738] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                            class="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                        Delivery
+                                    </button>
+                                    <button @click="orderType = 'Take-out'" 
+                                            :class="orderType === 'Take-out' ? 'bg-[#006738] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                            class="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                        Pickup
+                                    </button>
+                                </div>
+
+                                <!-- Details Selector Box -->
+                                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+                                    <!-- Address inputs if Delivery selected -->
+                                    <div x-show="orderType === 'Delivery'" class="space-y-3" x-collapse>
+                                        <div class="flex justify-between items-center">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address</p>
+                                            <template x-if="addresses && addresses.length > 0">
+                                                <button @click="useCurrentAddress = !useCurrentAddress" class="text-[9px] font-black text-[#006738] hover:underline uppercase tracking-wider">
+                                                    <span x-text="useCurrentAddress ? 'Manual Entry' : 'Saved Address'"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+
+                                        <!-- Saved Address Panel -->
+                                        <template x-if="useCurrentAddress && addresses && addresses.length > 0">
+                                            <div class="p-3 bg-green-50/50 border border-green-100 rounded-xl space-y-1">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-[9px] font-black text-green-700 uppercase">Primary Address</span>
+                                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-[#006738]"></i>
+                                                </div>
+                                                <p class="text-xs font-bold text-slate-700" x-text="`${addresses[0].Add_StreetName}, Brgy. ${addresses[0].Add_Brgy || 'N/A'}, ${addresses[0].Add_City}`"></p>
+                                                <p x-show="addresses[0].Add_Landmark" class="text-[10px] text-slate-400 font-medium" x-text="`Landmark: ${addresses[0].Add_Landmark}`"></p>
+                                            </div>
+                                        </template>
+
+                                        <!-- Manual Entry Address Inputs -->
+                                        <div x-show="!useCurrentAddress || !addresses || addresses.length === 0" class="space-y-2">
+                                            <input type="text" x-model="manualAddress.street" placeholder="Street / House No." @input="useCurrentAddress = false"
                                                    class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
-                                            <input type="text" x-model="manualAddress.city" placeholder="City" @input="useCurrentAddress = false"
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <input type="text" x-model="manualAddress.brgy" placeholder="Barangay" @input="useCurrentAddress = false"
+                                                       class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                                <input type="text" x-model="manualAddress.city" placeholder="City" @input="useCurrentAddress = false"
+                                                       class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
+                                            </div>
+                                            <input type="text" x-model="manualAddress.landmark" placeholder="Landmark (Optional)" @input="useCurrentAddress = false"
                                                    class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
                                         </div>
-                                        <input type="text" x-model="manualAddress.landmark" placeholder="Landmark (Optional)" @input="useCurrentAddress = false"
-                                               class="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold text-slate-700 focus:bg-white focus:border-[#006738] outline-none transition-all">
                                     </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Payment</p>
-                                        <p class="text-xs font-black text-slate-700" x-text="paymentMethod || 'Select Method'"></p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button @click="paymentMethod = 'Cash (COD)'" class="p-2 rounded-lg border text-[8px] font-black" :class="paymentMethod === 'Cash (COD)' ? 'border-[#006738] bg-green-50' : 'border-slate-100'">COD</button>
-                                        <button @click="paymentMethod = 'E-Wallet'" class="p-2 rounded-lg border text-[8px] font-black" :class="paymentMethod === 'E-Wallet' ? 'border-[#006738] bg-green-50' : 'border-slate-100'">WALLET</button>
+
+                                    <!-- Payment Mode -->
+                                    <div class="flex justify-between items-center pt-1" :class="orderType === 'Delivery' ? 'border-t border-slate-50 pt-3' : ''">
+                                        <div>
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Payment</p>
+                                            <p class="text-xs font-black text-slate-700" x-text="paymentMethod || 'Select Method'"></p>
+                                        </div>
+                                        <div class="flex gap-1.5">
+                                            <button @click="paymentMethod = 'Cash (COD)'" 
+                                                    :class="paymentMethod === 'Cash (COD)' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-slate-50'"
+                                                    class="py-2 px-3 rounded-lg border text-[9px] font-black transition-all active:scale-95">COD</button>
+                                            <button @click="paymentMethod = 'E-Wallet'" 
+                                                    :class="paymentMethod === 'E-Wallet' ? 'border-[#006738] bg-green-50 text-[#006738]' : 'border-slate-100 text-slate-400 bg-slate-50'"
+                                                    class="py-2 px-3 rounded-lg border text-[9px] font-black transition-all active:scale-95">WALLET</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </template>
+                    </div>
 
-                            <div class="flex justify-between items-end px-2">
+                    <!-- Sticky Sticky Thin Footer (No overflow squeeze) -->
+                    <template x-if="cart.length > 0">
+                        <div class="p-6 bg-[#f8faf8] border-t border-slate-100 space-y-4 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
+                            <div class="flex justify-between items-end px-1">
                                 <div>
                                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grand Total</p>
-                                    <p class="text-4xl font-black text-[#ed1c24] leading-none" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></p>
+                                    <p class="text-3xl font-black text-[#ed1c24] leading-none" x-text="'₱' + parseFloat(cartTotal).toFixed(0)"></p>
                                 </div>
                                 <div class="text-right">
                                     <p x-show="orderType === 'Delivery' && cartTotal < 200" class="text-[9px] text-red-500 font-black uppercase mb-1">Min ₱200 for delivery</p>
@@ -2847,12 +2899,13 @@ $user_id = $_SESSION['user_id'];
 
                             <button @click="placeOrder()" 
                                     :disabled="!isCartValid"
-                                    :class="!isCartValid ? 'opacity-50 grayscale cursor-not-allowed bg-slate-400' : 'bg-[#006738] hover:scale-[1.02] active:scale-95 shadow-xl shadow-green-900/20'"
-                                    class="w-full text-white font-black py-6 rounded-[2.5rem] transition-all uppercase tracking-[0.2em] text-sm">
-                                Confirm Order
+                                    :class="!isCartValid ? 'opacity-50 grayscale cursor-not-allowed bg-slate-300 text-slate-500' : 'bg-[#006738] hover:scale-[1.01] active:scale-95 shadow-lg shadow-green-900/10 text-white'"
+                                    class="w-full py-4 rounded-2xl transition-all duration-300 uppercase tracking-[0.1em] text-xs font-black flex items-center justify-center gap-2">
+                                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                                <span>Confirm Order</span>
                             </button>
                         </div>
-                    </div>
+                    </template>
                 </div>
             </div>
 
