@@ -306,8 +306,8 @@ try {
         $check = $pdo->prepare("SELECT Menu_Brnch_ID FROM MENU_ITEM WHERE Menu_ID = ?");
         $check->execute([$id]);
         $owner = $check->fetchColumn();
-        if ($owner != $branch_id) {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only edit items created by your branch.']);
+        if ($owner !== null && $owner != $branch_id) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only edit core items or items belonging to your branch.']);
             exit;
         }
 
@@ -333,8 +333,8 @@ try {
         $check = $pdo->prepare("SELECT Menu_Brnch_ID FROM MENU_ITEM WHERE Menu_ID = ?");
         $check->execute([$id]);
         $owner = $check->fetchColumn();
-        if ($owner != $branch_id) {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only delete items created by your branch.']);
+        if ($owner !== null && $owner != $branch_id) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized: You can only delete core items or items belonging to your branch.']);
             exit;
         }
 

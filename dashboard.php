@@ -2442,18 +2442,16 @@ $user_id = $_SESSION['user_id'];
                             </div>
                         </div>
                         
-                        <!-- Actions if custom branch item -->
-                        <template x-if="item.Menu_Brnch_ID">
-                            <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                                <button @click="openEditMenu(item)" class="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
-                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                                    <span>Edit</span>
-                                </button>
-                                <button @click="deleteBranchMenuItem(item.Menu_ID)" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
-                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
-                        </template>
+                        <!-- Actions for editing and deleting the menu items -->
+                        <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                            <button @click="openEditMenu(item)" class="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-600"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button @click="deleteBranchMenuItem(item.Menu_ID)" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -3490,7 +3488,7 @@ $user_id = $_SESSION['user_id'];
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <template x-if="role === 'Branch Manager' && editingMenu && editingMenu.Menu_Brnch_ID">
+                        <template x-if="role === 'Branch Manager' && editingMenu">
                             <button @click="deleteBranchMenuItem(editingMenu.Menu_ID); showEditMenuModal = false;" class="px-5 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 transition-all">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 <span>Delete Item</span>
