@@ -171,38 +171,16 @@ try {
         echo json_encode(['success' => true, 'message' => 'Manager deleted successfully!']);
     }
     elseif ($action === 'create_menu') {
-        $name = $data['name'] ?? '';
-        $desc = $data['desc'] ?? '';
-        $price = $data['price'] ?? 0;
-        $cat = $data['category'] ?? '';
-        $size = $data['size'] ?? 'Standard';
-        $image = $data['image'] ?? '';
-
-        if (empty($name) || empty($cat)) {
-            echo json_encode(['success' => false, 'message' => 'Menu name and category required.']);
-            exit;
-        }
-
-        if (!empty($image)) {
-            $image = saveMenuImageLocal($image);
-        }
-
-        // Ensure image column exists and has enough capacity for base64
-        try {
-            $pdo->exec("ALTER TABLE MENU_ITEM MODIFY COLUMN Menu_Image LONGTEXT");
-        } catch (Exception $e) {
-            try {
-                $pdo->exec("ALTER TABLE MENU_ITEM ADD COLUMN Menu_Image LONGTEXT AFTER Menu_Description");
-            } catch (Exception $e2) { /* already exists and handled */ }
-        }
-
-        $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size, Menu_Image) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $desc, $price, $cat, $size, $image]);
-
-        echo json_encode(['success' => true, 'message' => 'Global menu item added!']);
+        echo json_encode(['success' => false, 'message' => 'Unauthorized. Only branch managers can add menu items now.']);
+        exit;
     }
     elseif ($action === 'get_menu') {
-        $stmt = $pdo->query("SELECT * FROM MENU_ITEM WHERE Menu_Status != 'D'");
+        $stmt = $pdo->query("
+            SELECT m.*, b.Brnch_Name as Creator_Branch_Name 
+            FROM MENU_ITEM m 
+            LEFT JOIN BRANCH b ON m.Menu_Brnch_ID = b.Brnch_ID
+            WHERE m.Menu_Status != 'D'
+        ");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'delete_menu') {

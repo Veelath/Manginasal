@@ -1088,6 +1088,12 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="store" class="w-5 h-5"></i>
                     <span x-show="sidebarOpen" class="font-bold text-sm">Branches</span>
                 </a>
+                <a href="#" @click="activeTab = 'menu'; fetchMenu()" 
+                   :class="activeTab === 'menu' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all">
+                    <i data-lucide="cooking-pot" class="w-5 h-5"></i>
+                    <span x-show="sidebarOpen" class="font-bold text-sm">Store Menus</span>
+                </a>
                 <a href="#" @click="activeTab = 'manage_managers'" 
                    :class="activeTab === 'manage_managers' ? 'bg-[#ffec00] text-black shadow-lg shadow-yellow-500/10' : 'text-white/70 hover:bg-white/10 hover:text-white'" 
                    class="flex items-center gap-3 p-3 rounded-xl transition-all">
@@ -1941,16 +1947,12 @@ $user_id = $_SESSION['user_id'];
         <div x-show="activeTab === 'menu'" x-cloak>
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Global Menu</h2>
-                    <p class="text-slate-500 text-sm">Master list of all Mang Inasal products.</p>
+                    <h2 class="text-xl font-black text-slate-800 font-poppins text-[#006738]">Branch Menus Directory</h2>
+                    <p class="text-slate-500 text-sm">Monitor all menu offerings across all active branches. Only Branch Managers can add or alter entries.</p>
                 </div>
                 <div class="flex gap-2">
                     <button @click="fetchMenu()" class="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-slate-600">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                    </button>
-                    <button @click="showMenuModal = true" class="bg-[#006738] text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#004d2a] shadow-lg shadow-green-900/10 transition-all active:scale-95">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        <span>Add Global Item</span>
                     </button>
                 </div>
             </div>
@@ -1959,16 +1961,16 @@ $user_id = $_SESSION['user_id'];
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Product Info</th>
+                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Branch Origin</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Category</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Price</th>
                             <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest">Status</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-if="menuItems.length === 0">
                             <tr>
-                                <td colspan="5" class="p-12 text-center text-slate-400 italic">No menu items found. Click "Add Global Item" to start.</td>
+                                <td colspan="5" class="p-12 text-center text-slate-400 italic">No menu items found.</td>
                             </tr>
                         </template>
                         <template x-for="item in menuItems" :key="item.Menu_ID">
@@ -1991,23 +1993,22 @@ $user_id = $_SESSION['user_id'];
                                     </div>
                                 </td>
                                 <td class="p-4">
+                                    <template x-if="item.Creator_Branch_Name">
+                                        <span class="text-[10px] font-black uppercase px-2 py-1 rounded bg-orange-50 text-orange-700 border border-orange-100" x-text="item.Creator_Branch_Name"></span>
+                                    </template>
+                                    <template x-if="!item.Creator_Branch_Name">
+                                        <span class="text-[10px] font-black uppercase px-2 py-1 rounded bg-green-50 text-green-700 border border-green-100">Core / Standard</span>
+                                    </template>
+                                </td>
+                                <td class="p-4">
                                     <span class="text-[10px] font-black uppercase px-2 py-1 rounded bg-slate-100 text-slate-600" x-text="item.Menu_Category"></span>
                                 </td>
                                 <td class="p-4 text-sm font-black text-[#006738]" x-text="'₱' + parseFloat(item.Menu_Price).toFixed(2)"></td>
                                 <td class="p-4">
-                                    <button @click="updateMenuStatus(item.Menu_ID, item.Menu_Status === 'Y' ? 'N' : 'Y')"
-                                            :class="item.Menu_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                                            class="text-[10px] font-black uppercase px-3 py-1 rounded-full transition-all hover:scale-105">
+                                    <span :class="item.Menu_Status === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                          class="text-[10px] font-black uppercase px-3 py-1 rounded-full">
                                         <span x-text="item.Menu_Status === 'Y' ? 'Active' : 'Unavailable'"></span>
-                                    </button>
-                                </td>
-                                <td class="p-4 text-right flex justify-end gap-2">
-                                    <button @click="openEditMenu(item)" class="p-2 text-slate-400 hover:text-[#006738] hover:bg-green-50 rounded-lg transition-all">
-                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                    </button>
-                                    <button @click="deleteMenu(item.Menu_ID)" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
+                                    </span>
                                 </td>
                             </tr>
                         </template>
@@ -2419,7 +2420,7 @@ $user_id = $_SESSION['user_id'];
                             </div>
                             <div class="flex justify-between items-center mb-4">
                                 <span x-text="item.Menu_Category" class="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-1 rounded-lg"></span>
-                                <template x-if="item.Menu_Brnch_ID !== null">
+                                <template x-if="item.Menu_Brnch_ID">
                                     <span class="text-[9px] font-black uppercase text-green-700 bg-green-100 px-2 py-1 rounded-lg">Custom</span>
                                 </template>
                             </div>
@@ -2442,7 +2443,7 @@ $user_id = $_SESSION['user_id'];
                         </div>
                         
                         <!-- Actions if custom branch item -->
-                        <template x-if="item.Menu_Brnch_ID !== null">
+                        <template x-if="item.Menu_Brnch_ID">
                             <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                                 <button @click="openEditMenu(item)" class="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all">
                                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
@@ -2710,6 +2711,20 @@ $user_id = $_SESSION['user_id'];
                                 
                                 <div class="space-y-4">
                                     <div>
+                                        <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                            <template x-if="item.Creator_Branch_Name">
+                                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 flex items-center gap-1">
+                                                    <i data-lucide="map-pin" class="w-2.5 h-2.5"></i>
+                                                    <span x-text="item.Creator_Branch_Name"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="!item.Creator_Branch_Name">
+                                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-100 flex items-center gap-1">
+                                                    <i data-lucide="shield-check" class="w-2.5 h-2.5"></i>
+                                                    Core Menu
+                                                </span>
+                                            </template>
+                                        </div>
                                         <h4 class="font-black text-slate-800 font-poppins text-lg" x-text="item.Menu_Name"></h4>
                                         <p class="text-xs text-slate-400 font-medium line-clamp-2 mt-1" x-text="item.Menu_Description"></p>
                                         <!-- Stock Level Badge -->
@@ -3474,8 +3489,16 @@ $user_id = $_SESSION['user_id'];
                             </div>
                         </div>
                     </div>
-                    <button @click="submitEditMenu" class="w-full bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all" x-text="role === 'System Admin' ? 'Update Global Menu' : 'Update Branch Menu'">
-                    </button>
+                    <div class="flex gap-3">
+                        <template x-if="role === 'Branch Manager' && editingMenu && editingMenu.Menu_Brnch_ID">
+                            <button @click="deleteBranchMenuItem(editingMenu.Menu_ID); showEditMenuModal = false;" class="px-5 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <span>Delete Item</span>
+                            </button>
+                        </template>
+                        <button @click="submitEditMenu" class="flex-1 bg-[#006738] text-white py-4 rounded-2xl font-black shadow-lg shadow-green-900/10 hover:bg-[#004d2a] transition-all" x-text="role === 'System Admin' ? 'Update Global Menu' : 'Update Branch Menu'">
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

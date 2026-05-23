@@ -37,8 +37,9 @@ try {
     elseif ($action === 'get_branch_menu') {
         $branch_id = $data['branch_id'];
         $stmt = $pdo->prepare("
-            SELECT m.*, IFNULL(bm.Stock_Qty, 50) as Stock_Qty 
+            SELECT m.*, b.Brnch_Name as Creator_Branch_Name, IFNULL(bm.Stock_Qty, 50) as Stock_Qty 
             FROM MENU_ITEM m 
+            LEFT JOIN BRANCH b ON m.Menu_Brnch_ID = b.Brnch_ID
             LEFT JOIN BRANCH_MENU bm ON m.Menu_ID = bm.Menu_ID AND bm.Brnch_ID = ?
             WHERE m.Menu_Status = 'Y' 
               AND (m.Menu_Brnch_ID IS NULL OR m.Menu_Brnch_ID = ?)
