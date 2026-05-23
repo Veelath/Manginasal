@@ -175,7 +175,7 @@ $user_id = $_SESSION['user_id'];
         }
     },
 
-    compressAndResizeImage(file, maxDim = 150, quality = 0.5) {
+    compressAndResizeImage(file, maxDim = 500, quality = 0.8) {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -386,7 +386,7 @@ $user_id = $_SESSION['user_id'];
         if (item.Stock_Qty !== undefined && item.Stock_Qty !== null) {
             const qtyInCart = this.cart.filter(i => i.Menu_ID === item.Menu_ID).reduce((acc, curr) => acc + curr.qty, 0);
             if (qtyInCart >= item.Stock_Qty) {
-                this.message = { success: false, text: "Sorry, this product's branch inventory is depleted." };
+                this.message = { success: false, text: 'Sorry, branch inventory for this item is depleted.' };
                 return;
             }
         }
@@ -3412,8 +3412,8 @@ $user_id = $_SESSION['user_id'];
                                 </template>
                             </div>
                             <div class="flex-1">
-                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 150, 0.5).then(base64 => { newMenu.image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-black">Upload picture of the menu item (auto-compressed to a short string)</p>
+                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 500, 0.8).then(base64 => { newMenu.image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-black">Upload picture of the menu item (auto-saved as compressed file)</p>
                             </div>
                         </div>
                     </div>
@@ -3470,7 +3470,7 @@ $user_id = $_SESSION['user_id'];
                                 </template>
                             </div>
                             <div class="flex-1">
-                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 150, 0.5).then(base64 => { editingMenu.Menu_Image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
+                                <input type="file" @change="let file = $event.target.files[0]; if (file) { compressAndResizeImage(file, 500, 0.8).then(base64 => { editingMenu.Menu_Image = base64; }); }" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-green-50 file:text-[#006738] hover:file:bg-green-100 cursor-pointer">
                             </div>
                         </div>
                     </div>

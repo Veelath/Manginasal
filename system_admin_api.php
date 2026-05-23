@@ -104,6 +104,10 @@ try {
             exit;
         }
 
+        if (!empty($image)) {
+            $image = saveMenuImageLocal($image, $id);
+        }
+
         $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Name = ?, Menu_Description = ?, Menu_Price = ?, Menu_Category = ?, Menu_Size = ?, Menu_Image = ? WHERE Menu_ID = ?");
         $stmt->execute([$name, $desc, $price, $cat, $size, $image, $id]);
 
@@ -177,6 +181,10 @@ try {
         if (empty($name) || empty($cat)) {
             echo json_encode(['success' => false, 'message' => 'Menu name and category required.']);
             exit;
+        }
+
+        if (!empty($image)) {
+            $image = saveMenuImageLocal($image);
         }
 
         // Ensure image column exists and has enough capacity for base64

@@ -275,6 +275,10 @@ try {
             exit;
         }
 
+        if (!empty($image)) {
+            $image = saveMenuImageLocal($image);
+        }
+
         $stmt = $pdo->prepare("INSERT INTO MENU_ITEM (Menu_Brnch_ID, Menu_Name, Menu_Description, Menu_Price, Menu_Category, Menu_Size, Menu_Image) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$branch_id, $name, $desc, $price, $cat, $size, $image]);
 
@@ -308,6 +312,7 @@ try {
         }
 
         if (!empty($image)) {
+            $image = saveMenuImageLocal($image, $id);
             $stmt = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Name = ?, Menu_Description = ?, Menu_Price = ?, Menu_Category = ?, Menu_Size = ?, Menu_Image = ? WHERE Menu_ID = ?");
             $stmt->execute([$name, $desc, $price, $cat, $size, $image, $id]);
         } else {

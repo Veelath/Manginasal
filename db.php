@@ -13,6 +13,67 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
+/**
+ * Helper to save base64 menu images as real files in an uploads/ directory on the web server.
+ * Returns the relative file path to be stored in the database.
+ */
+function saveMenuImageLocal($base64Str, $itemId = null) {
+    if (empty($base64Str)) {
+        return '';
+    }
+
+    // If already local file path, external URL or SVG data, return it as-is
+    if (strpos($base64Str, 'uploads/') === 0 || strpos($base64Str, 'http://') === 0 || strpos($base64Str, 'https://') === 0 || strpos($base64Str, 'data:image/svg+xml') === 0) {
+        return $base64Str;
+    }
+
+    // Ensure uploads directory exists
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+    }
+
+    $ext = 'jpg';
+    $rawData = null;
+
+    if (strpos($base64Str, 'data:') === 0) {
+        $parts = explode(',', $base64Str);
+        if (count($parts) >= 2) {
+            $mimePart = $parts[0];
+            $base64Data = $parts[1];
+
+            if (strpos($mimePart, 'image/png') !== false) {
+                $ext = 'png';
+            } elseif (strpos($mimePart, 'image/gif') !== false) {
+                $ext = 'gif';
+            } elseif (strpos($mimePart, 'image/webp') !== false) {
+                $ext = 'webp';
+            } elseif (strpos($mimePart, 'image/svg+xml') !== false) {
+                $ext = 'svg';
+            }
+
+            $rawData = @base64_decode($base64Data);
+        }
+    } else {
+        $rawData = @base64_decode($base64Str);
+    }
+
+    if (!$rawData) {
+        return $base64Str; // Return as-is if decoding failed
+    }
+
+    // Use a clean, deterministic file name
+    $prefix = $itemId ? 'menu_' . $itemId : 'menu_item_' . uniqid();
+    $fileName = $prefix . '_' . time() . '.' . $ext;
+    $filePath = $uploadDir . '/' . $fileName;
+
+    if (@file_put_contents($filePath, $rawData)) {
+        return 'uploads/' . $fileName;
+    }
+
+    return $base64Str;
+}
+
 try {
      $pdo = new PDO($dsn, $user, $pass, $options);
      
@@ -47,13 +108,27 @@ try {
          }
      }
 
-     // 4. Clean and compress legacy oversized image strings from the MENU_ITEM database table instantly
+     // 4. Clean and convert legacy oversized base64 images from database to local files automatically
      try {
-         // Standard elegant, highly compact SVG green plate/food vector fallback (only 268 characters of database space)
-         $svgFallback = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDY3MzgiIHN0cm9rZS13aWR0aD0iNCI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDAiLz48cGF0aCBkPSJNMzAgNDBoNDBNMzAgNTBoNDBNMzAgNjBoNDAiLz48L3N2Zz4=';
-         
-         // Run direct, lightning-fast SQL query to update table directly inside MariaDB/MySQL without PHP memory overhead
-         $pdo->exec("UPDATE MENU_ITEM SET Menu_Image = '$svgFallback' WHERE Menu_Image IS NOT NULL AND LENGTH(Menu_Image) > 10000");
+         $stmt = $pdo->query("SELECT Menu_ID, Menu_Image FROM MENU_ITEM WHERE Menu_Image IS NOT NULL AND Menu_Image NOT LIKE 'uploads/%'");
+         $itemsToMigrate = $stmt->fetchAll();
+         foreach ($itemsToMigrate as $item) {
+             $menuId = $item['Menu_ID'];
+             $base64Str = $item['Menu_Image'];
+
+             if (empty($base64Str)) {
+                 continue;
+             }
+
+             // If it is a base64 string, migrate and save it
+             if (strpos($base64Str, 'data:') === 0 || strlen($base64Str) > 200) {
+                 $filePathRelative = saveMenuImageLocal($base64Str, $menuId);
+                 if ($filePathRelative !== $base64Str) {
+                     $update = $pdo->prepare("UPDATE MENU_ITEM SET Menu_Image = ? WHERE Menu_ID = ?");
+                     $update->execute([$filePathRelative, $menuId]);
+                 }
+             }
+         }
      } catch (Exception $e) {
          // Fail-safe to avoid blocking page execution
      }
