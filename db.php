@@ -22,8 +22,8 @@ function saveMenuImageLocal($base64Str, $itemId = null) {
         return '';
     }
 
-    // If already local file path, external URL or SVG data, return it as-is
-    if (strpos($base64Str, 'uploads/') === 0 || strpos($base64Str, 'http://') === 0 || strpos($base64Str, 'https://') === 0 || strpos($base64Str, 'data:image/svg+xml') === 0) {
+    // If already local file path or external URL, return it as-is
+    if (strpos($base64Str, 'uploads/') === 0 || strpos($base64Str, 'http://') === 0 || strpos($base64Str, 'https://') === 0) {
         return $base64Str;
     }
 
