@@ -29,7 +29,8 @@ function sendWithFirebase(res: any, payload: any) {
     ...payload,
     firebase_status: {
       connected: !!dbFirestore,
-      error: dbFirestore ? '' : 'Firebase connection uninitialized or credential missing'
+      error: dbFirestore ? '' : 'Firebase connection uninitialized or credential missing',
+      detailed_guide: dbFirestore ? '' : 'Please ensure Firebase/Firestore SDK configurations are correct.'
     }
   });
 }
@@ -49,7 +50,7 @@ apiRouter.post('/orders_api.php', async (req, res) => {
   try {
     if (action === 'get_branches') {
       const branches = db.prepare('SELECT * FROM BRANCH WHERE Brnch_Status = \'Y\'').all();
-      return sendWithFirebase(res, { success: true, branches });
+      return sendWithFirebase(res, { success: true, branches, data: branches });
     }
 
     else if (action === 'get_menu') {
@@ -65,7 +66,7 @@ apiRouter.post('/orders_api.php', async (req, res) => {
       } else {
         menuItems = db.prepare('SELECT m.*, \'Y\' as Is_Available, 50 as Stock_Qty FROM MENU_ITEM m WHERE m.Menu_Status = \'Y\'').all();
       }
-      return sendWithFirebase(res, { success: true, menu: menuItems });
+      return sendWithFirebase(res, { success: true, menu: menuItems, data: menuItems });
     }
 
     else if (action === 'get_customer_addresses') {

@@ -14,7 +14,8 @@ function sendWithFirebaseStatus(res: any, data: any) {
     ...data,
     firebase_status: {
       connected: isConnected,
-      error: isConnected ? '' : 'Firebase connection uninitialized or credential missing'
+      error: isConnected ? '' : 'Firebase connection uninitialized or credential missing',
+      detailed_guide: isConnected ? '' : 'Please ensure Firebase/Firestore SDK configurations are correct.'
     }
   });
 }
