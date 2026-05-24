@@ -99,6 +99,9 @@ try {
     //    Retrieves data from Firebase and displays in UI
     // ============================================================
     elseif ($action === 'get_branches') {
+        // Run bidirectional sync to ensure MySQL contains all modern Firebase branch entries
+        syncFirebaseBranchesToMySql($pdo, $firestore);
+
         // Try Firebase first
         try {
             $fb_branches = [];
@@ -119,6 +122,9 @@ try {
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll(), 'source' => 'mysql']);
     }
     elseif ($action === 'get_menu') {
+        // Run bidirectional sync to ensure MySQL contains all modern Firebase menu item entries
+        syncFirebaseMenuToMySql($pdo, $firestore);
+
         // Try Firebase first
         try {
             $fb_menu = [];
@@ -152,6 +158,9 @@ try {
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
     }
     elseif ($action === 'get_all_users') {
+        // Run bidirectional sync to ensure MySQL is fully populated with all registered Firestore customers
+        syncFirebaseCustomersToMySql($pdo, $firestore);
+
         $users = [];
         $stmt = $pdo->query("SELECT Admin_ID as id, Admin_FName as fname, Admin_LName as lname, Admin_Email as email, Admin_MobileNum as mobile, 'System Admin' as role, 'Admin' as source FROM SYSTEM_ADMIN");
         $users = array_merge($users, $stmt->fetchAll());

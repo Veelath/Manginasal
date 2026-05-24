@@ -1,5 +1,6 @@
 <?php
 include 'db.php';
+include 'firebase.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -83,6 +84,9 @@ try {
         }
 
         // Signups are usually for CUSTOMERS
+        // Run bidirectional sync to ensure records are aligned
+        syncFirebaseCustomersToMySql($pdo, $firestore);
+
         $stmt = $pdo->prepare("SELECT * FROM CUSTOMER WHERE Cust_Email = ?");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
@@ -95,10 +99,31 @@ try {
         // Comprehensive signup
         $stmt = $pdo->prepare("INSERT INTO CUSTOMER (Cust_FName, Cust_LName, Cust_Num, Cust_Email, Cust_Pass) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$fname, $lname, $mobile, $email, $hashedPassword]);
+        $new_customer_id = $pdo->lastInsertId();
+
+        // Sync to Firebase
+        try {
+            if (isset($firestore) && $firestore && !($firestore instanceof DummyFirestore)) {
+                fbAdd($firestore, 'customer', [
+                    'Cust_ID'    => (string)$new_customer_id,
+                    'Cust_FName' => $fname,
+                    'Cust_LName' => $lname,
+                    'Cust_Num'   => $mobile,
+                    'Cust_Email' => $email,
+                    'Cust_Pass'  => $hashedPassword,
+                    'mysql_id'   => (string)$new_customer_id
+                ]);
+            }
+        } catch (Exception $fbErr) {
+            error_log('Firebase signup sync error: ' . $fbErr->getMessage());
+        }
 
         echo json_encode(['success' => true, 'message' => 'Customer account created!']);
     } 
     elseif ($action === 'login') {
+        // Run bidirectional sync to ensure records are aligned for logging in
+        syncFirebaseCustomersToMySql($pdo, $firestore);
+
         // AUTO-CREATE ADMIN if SYSTEM_ADMIN table is empty
         $stmt = $pdo->prepare("SELECT * FROM SYSTEM_ADMIN WHERE Admin_Email = 'admin@inasal.com'");
         $stmt->execute();
