@@ -54,12 +54,13 @@ try {
         throw new Exception("Kreait\\Firebase\\Factory class not found. Please run 'composer require kreait/firebase-php'.");
     }
 
+    $factory = new \Kreait\Firebase\Factory();
     $credFile = findServiceAccountFile();
-    if (!$credFile) {
-        throw new Exception("Firebase Service Account credentials JSON file not found in " . __DIR__ . "/ or hardcoded paths. Please place your *.json credentials file in the project folder.");
+    if ($credFile) {
+        $factory = $factory->withServiceAccount($credFile);
     }
-
-    $factory = (new \Kreait\Firebase\Factory)->withServiceAccount($credFile);
+    // In GCP Environments (like Cloud Run), if no JSON service account is explicitly provided,
+    // the SDK will automatically fallback to Application Default Credentials (ADC) via Metadata Server.
     $firestore = $factory->createFirestore()->database();
 
 } catch (Exception $e) {
