@@ -715,29 +715,83 @@ apiRouter.post('/system_admin_api.php', async (req, res) => {
       const rawPass = data.password || 'password';
       const hashPass = bcrypt.hashSync(rawPass, 10);
 
-      db.prepare(`
+      const insert = db.prepare(`
         INSERT INTO BRANCH_MANAGER (Mgr_Brnch_ID, Mgr_FName, Mgr_LName, Mgr_Email, Mgr_MobileNum, Mgr_Pass)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(b_id, fname, lname, email, mobile, hashPass);
 
+      const mgr_id = insert.lastInsertRowid;
+
+      try {
+        await firestoreAdd('branch_manager', {
+          Mgr_ID: String(mgr_id),
+          mysql_id: String(mgr_id),
+          Mgr_Brnch_ID: b_id,
+          Mgr_FName: fname,
+          Mgr_LName: lname,
+          Mgr_Email: email,
+          Mgr_MobileNum: mobile,
+          Mgr_Pass: hashPass,
+          Mgr_Status: 'Active'
+        });
+      } catch (err) {
+        console.error('Firebase create_manager sync error:', err);
+      }
+
       return sendWithFirebase(res, { success: true, message: 'Branch Manager Created!' });
     }
 
-    else if (action === 'get_branches_list') {
-      const list = db.prepare('SELECT * FROM BRANCH').all();
-      return sendWithFirebase(res, { success: true, data: list });
+    else if (action === 'get_branches' || action === 'get_branches_list') {
+      const list = db.prepare(`
+        SELECT b.*, m.Mgr_FName as fname, m.Mgr_LName as lname 
+        FROM BRANCH b 
+        LEFT JOIN BRANCH_MANAGER m ON b.Brnch_ID = m.Mgr_Brnch_ID
+      `).all();
+      return sendWithFirebase(res, { success: true, branches: list, data: list });
     }
 
-    else if (action === 'get_managers_list') {
+    else if (action === 'get_managers' || action === 'get_managers_list') {
       const list = db.prepare(`
-        SELECT m.*, b.Brnch_Name 
+        SELECT m.Mgr_ID as id, m.Mgr_Brnch_ID, m.Mgr_FName as fname, m.Mgr_LName as lname, m.Mgr_Email as email, m.Mgr_MobileNum as mobile, m.Mgr_Status as status, b.Brnch_Name 
         FROM BRANCH_MANAGER m
         LEFT JOIN BRANCH b ON m.Mgr_Brnch_ID = b.Brnch_ID
       `).all();
       return sendWithFirebase(res, { success: true, data: list });
     }
 
-    else if (action === 'get_global_stats') {
+    else if (action === 'get_staff') {
+      const list = db.prepare(`
+        SELECT s.Staff_ID as id, s.Staff_Brnch_ID, s.Staff_Mgr_ID, s.Staff_FName as fname, s.Staff_LName as lname, s.Staff_Email as email, s.Staff_MobileNum as mobile, s.Staff_Role as role, s.Staff_Status as status, b.Brnch_Name, m.Mgr_FName, m.Mgr_LName 
+        FROM STAFF s 
+        LEFT JOIN BRANCH b ON s.Staff_Brnch_ID = b.Brnch_ID 
+        LEFT JOIN BRANCH_MANAGER m ON s.Staff_Mgr_ID = m.Mgr_ID 
+        WHERE s.Staff_Role = 'Kitchen Staff'
+      `).all();
+      return sendWithFirebase(res, { success: true, data: list });
+    }
+
+    else if (action === 'get_riders') {
+      const list = db.prepare(`
+        SELECT r.Rider_ID as id, r.Rider_Brnch_ID, r.Rider_FName as fname, r.Rider_LName as lname, r.Rider_Email as email, r.Rider_MobileNum as mobile, r.Rider_Status as status, b.Brnch_Name 
+        FROM RIDER r 
+        LEFT JOIN BRANCH b ON r.Rider_Brnch_ID = b.Brnch_ID
+      `).all();
+      return sendWithFirebase(res, { success: true, data: list });
+    }
+
+    else if (action === 'get_all_users') {
+      const users: any[] = [];
+      const admins = db.prepare("SELECT Admin_ID as id, Admin_FName as fname, Admin_LName as lname, Admin_Email as email, Admin_MobileNum as mobile, 'System Admin' as role, 'Admin' as source FROM SYSTEM_ADMIN").all();
+      const managers = db.prepare("SELECT Mgr_ID as id, Mgr_FName as fname, Mgr_LName as lname, Mgr_Email as email, Mgr_MobileNum as mobile, 'Branch Manager' as role, 'Manager' as source FROM BRANCH_MANAGER").all();
+      const staff = db.prepare("SELECT Staff_ID as id, Staff_FName as fname, Staff_LName as lname, Staff_Email as email, Staff_MobileNum as mobile, Staff_Role as role, 'Staff' as source FROM STAFF").all();
+      const customers = db.prepare("SELECT Cust_ID as id, Cust_FName as fname, Cust_LName as lname, Cust_Email as email, Cust_Num as mobile, 'Customer' as role, 'Customer' as source FROM CUSTOMER").all();
+      const riders = db.prepare("SELECT Rider_ID as id, Rider_FName as fname, Rider_LName as lname, Rider_Email as email, Rider_MobileNum as mobile, 'Driver' as role, 'Rider' as source FROM RIDER").all();
+      
+      users.push(...admins, ...managers, ...staff, ...customers, ...riders);
+      return sendWithFirebase(res, { success: true, data: users });
+    }
+
+    else if (action === 'get_stats' || action === 'get_global_stats') {
       const bCount = (db.prepare('SELECT COUNT(*) as count FROM BRANCH').get() as any).count;
       const mCount = (db.prepare('SELECT COUNT(*) as count FROM BRANCH_MANAGER').get() as any).count;
       const orderCount = (db.prepare('SELECT COUNT(*) as count FROM orders').get() as any).count;
@@ -822,12 +876,30 @@ apiRouter.post('/system_admin_api.php', async (req, res) => {
 
       db.prepare('UPDATE BRANCH_MANAGER SET Mgr_Brnch_ID = ?, Mgr_FName = ?, Mgr_LName = ?, Mgr_Email = ?, Mgr_MobileNum = ? WHERE Mgr_ID = ?').run(b_id, fname, lname, email, mobile, id);
 
+      try {
+        await firestoreUpdate('branch_manager', id, {
+          Mgr_Brnch_ID: b_id,
+          Mgr_FName: fname,
+          Mgr_LName: lname,
+          Mgr_Email: email,
+          Mgr_MobileNum: mobile
+        }, 'mysql_id');
+      } catch (err) {
+        console.error('Firebase update_manager sync error:', err);
+      }
+
       return sendWithFirebase(res, { success: true, message: 'Manager updated!' });
     }
 
     else if (action === 'delete_manager') {
       const id = Number(data.id);
       db.prepare('DELETE FROM BRANCH_MANAGER WHERE Mgr_ID = ?').run(id);
+
+      try {
+        await firestoreDelete('branch_manager', id, 'mysql_id');
+      } catch (err) {
+        console.error('Firebase delete_manager sync error:', err);
+      }
       return sendWithFirebase(res, { success: true, message: 'Manager deleted!' });
     }
 

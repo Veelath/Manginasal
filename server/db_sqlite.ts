@@ -586,3 +586,362 @@ export async function syncFirebaseBranchesToMySql() {
     console.error('Error syncing Firebase branches:', err);
   }
 }
+
+export async function syncFirebaseManagersToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('branch_manager').get();
+    const fbEmails: { [key: string]: string } = {};
+    const fbMysqlIds: { [key: string]: string } = {};
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const email = data.Mgr_Email || data.email || '';
+      if (email) {
+        fbEmails[email.toLowerCase()] = doc.id;
+      }
+      const mysqlId = data.mysql_id || data.Mgr_ID || '';
+      if (mysqlId) {
+        fbMysqlIds[String(mysqlId)] = doc.id;
+      }
+
+      if (email) {
+        const mgrExist = db.prepare('SELECT Mgr_ID FROM BRANCH_MANAGER WHERE Mgr_Email = ?').get(email) as any;
+        const b_id = data.Mgr_Brnch_ID || data.branch_id || 1;
+        const fname = data.Mgr_FName || data.fname || 'Manager';
+        const lname = data.Mgr_LName || data.lname || 'User';
+        const mobile = data.Mgr_MobileNum || data.mobile || '09000000000';
+        const pass = data.Mgr_Pass || data.password || bcrypt.hashSync('password', 10);
+        const status = data.Mgr_Status || data.status || 'Active';
+
+        if (!mgrExist) {
+          const result = db.prepare(`
+            INSERT INTO BRANCH_MANAGER (Mgr_Brnch_ID, Mgr_FName, Mgr_LName, Mgr_Email, Mgr_MobileNum, Mgr_Pass, Mgr_Status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(b_id, fname, lname, email, mobile, pass, status);
+          const newId = result.lastInsertRowid;
+
+          await dbFirestore.collection('branch_manager').doc(doc.id).update({
+            Mgr_ID: String(newId),
+            mysql_id: String(newId)
+          });
+          fbMysqlIds[String(newId)] = doc.id;
+        } else {
+          const mysqlId_ = mgrExist.Mgr_ID;
+          if (!data.Mgr_ID || data.Mgr_ID != mysqlId_) {
+            await dbFirestore.collection('branch_manager').doc(doc.id).update({
+              Mgr_ID: String(mysqlId_),
+              mysql_id: String(mysqlId_)
+            });
+          }
+          fbMysqlIds[String(mysqlId_)] = doc.id;
+        }
+      }
+    }
+
+    // Push local managers to Firestore
+    const localMgrs = db.prepare('SELECT * FROM BRANCH_MANAGER').all() as any[];
+    for (const mgr of localMgrs) {
+      const mysqlId = String(mgr.Mgr_ID);
+      const email = mgr.Mgr_Email.toLowerCase();
+      if (!fbMysqlIds[mysqlId] && !fbEmails[email]) {
+        await dbFirestore.collection('branch_manager').add({
+          Mgr_ID: mysqlId,
+          mysql_id: mysqlId,
+          Mgr_Brnch_ID: mgr.Mgr_Brnch_ID,
+          Mgr_FName: mgr.Mgr_FName,
+          Mgr_LName: mgr.Mgr_LName,
+          Mgr_MobileNum: mgr.Mgr_MobileNum,
+          Mgr_Email: mgr.Mgr_Email,
+          Mgr_Pass: mgr.Mgr_Pass,
+          Mgr_Status: mgr.Mgr_Status
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase managers:', err);
+  }
+}
+
+export async function syncFirebaseStaffToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('staff').get();
+    const fbEmails: { [key: string]: string } = {};
+    const fbMysqlIds: { [key: string]: string } = {};
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const email = data.Staff_Email || data.email || '';
+      if (email) {
+        fbEmails[email.toLowerCase()] = doc.id;
+      }
+      const mysqlId = data.mysql_id || data.Staff_ID || '';
+      if (mysqlId) {
+        fbMysqlIds[String(mysqlId)] = doc.id;
+      }
+
+      if (email) {
+        const staffExist = db.prepare('SELECT Staff_ID FROM STAFF WHERE Staff_Email = ?').get(email) as any;
+        const b_id = data.Staff_Brnch_ID || data.branch_id || 1;
+        const m_id = data.Staff_Mgr_ID || data.mgr_id || 1;
+        const fname = data.Staff_FName || data.fname || data.first_name || 'Staff';
+        const lname = data.Staff_LName || data.lname || data.last_name || 'User';
+        const mobile = data.Staff_MobileNum || data.mobile || '09000000000';
+        const role = data.Staff_Role || data.role || 'Kitchen Staff';
+        const pass = data.Staff_Pass || data.password || bcrypt.hashSync('password', 10);
+        const status = data.Staff_Status || data.status || 'Active';
+
+        if (!staffExist) {
+          const result = db.prepare(`
+            INSERT INTO STAFF (Staff_Brnch_ID, Staff_Mgr_ID, Staff_FName, Staff_LName, Staff_Email, Staff_MobileNum, Staff_Role, Staff_Pass, Staff_Status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(b_id, m_id, fname, lname, email, mobile, role, pass, status);
+          const newId = result.lastInsertRowid;
+
+          await dbFirestore.collection('staff').doc(doc.id).update({
+            Staff_ID: String(newId),
+            mysql_id: String(newId)
+          });
+          fbMysqlIds[String(newId)] = doc.id;
+        } else {
+          const mysqlId_ = staffExist.Staff_ID;
+          if (!data.Staff_ID || data.Staff_ID != mysqlId_) {
+            await dbFirestore.collection('staff').doc(doc.id).update({
+              Staff_ID: String(mysqlId_),
+              mysql_id: String(mysqlId_)
+            });
+          }
+          fbMysqlIds[String(mysqlId_)] = doc.id;
+        }
+      }
+    }
+
+    // Push local staff to Firestore
+    const localStaff = db.prepare('SELECT * FROM STAFF').all() as any[];
+    for (const staff of localStaff) {
+      const mysqlId = String(staff.Staff_ID);
+      const email = staff.Staff_Email.toLowerCase();
+      if (!fbMysqlIds[mysqlId] && !fbEmails[email]) {
+        await dbFirestore.collection('staff').add({
+          Staff_ID: mysqlId,
+          mysql_id: mysqlId,
+          Staff_Brnch_ID: staff.Staff_Brnch_ID,
+          Staff_Mgr_ID: staff.Staff_Mgr_ID,
+          Staff_FName: staff.Staff_FName,
+          Staff_LName: staff.Staff_LName,
+          Staff_Email: staff.Staff_Email,
+          Staff_MobileNum: staff.Staff_MobileNum,
+          Staff_Role: staff.Staff_Role,
+          Staff_Pass: staff.Staff_Pass,
+          Staff_Status: staff.Staff_Status
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase staff:', err);
+  }
+}
+
+export async function syncFirebaseRidersToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('rider').get();
+    const fbEmails: { [key: string]: string } = {};
+    const fbMysqlIds: { [key: string]: string } = {};
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const email = data.Rider_Email || data.email || '';
+      if (email) {
+        fbEmails[email.toLowerCase()] = doc.id;
+      }
+      const mysqlId = data.mysql_id || data.Rider_ID || '';
+      if (mysqlId) {
+        fbMysqlIds[String(mysqlId)] = doc.id;
+      }
+
+      if (email) {
+        const riderExist = db.prepare('SELECT Rider_ID FROM RIDER WHERE Rider_Email = ?').get(email) as any;
+        const b_id = data.Rider_Brnch_ID || data.branch_id || 1;
+        const fname = data.Rider_FName || data.fname || data.first_name || 'Rider';
+        const lname = data.Rider_LName || data.lname || data.last_name || 'User';
+        const mobile = data.Rider_MobileNum || data.mobile || '09000000000';
+        const pass = data.Rider_Pass || data.password || bcrypt.hashSync('password', 10);
+        const status = data.Rider_Status || data.status || 'Y';
+
+        if (!riderExist) {
+          const result = db.prepare(`
+            INSERT INTO RIDER (Rider_Brnch_ID, Rider_FName, Rider_LName, Rider_Email, Rider_MobileNum, Rider_Pass, Rider_Status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(b_id, fname, lname, email, mobile, pass, status);
+          const newId = result.lastInsertRowid;
+
+          await dbFirestore.collection('rider').doc(doc.id).update({
+            Rider_ID: String(newId),
+            mysql_id: String(newId)
+          });
+          fbMysqlIds[String(newId)] = doc.id;
+        } else {
+          const mysqlId_ = riderExist.Rider_ID;
+          if (!data.Rider_ID || data.Rider_ID != mysqlId_) {
+            await dbFirestore.collection('rider').doc(doc.id).update({
+              Rider_ID: String(mysqlId_),
+              mysql_id: String(mysqlId_)
+            });
+          }
+          fbMysqlIds[String(mysqlId_)] = doc.id;
+        }
+      }
+    }
+
+    // Push local riders to Firestore
+    const localRiders = db.prepare('SELECT * FROM RIDER').all() as any[];
+    for (const rider of localRiders) {
+      const mysqlId = String(rider.Rider_ID);
+      const email = rider.Rider_Email.toLowerCase();
+      if (!fbMysqlIds[mysqlId] && !fbEmails[email]) {
+        await dbFirestore.collection('rider').add({
+          Rider_ID: mysqlId,
+          mysql_id: mysqlId,
+          Rider_Brnch_ID: rider.Rider_Brnch_ID,
+          Rider_FName: rider.Rider_FName,
+          Rider_LName: rider.Rider_LName,
+          Rider_Email: rider.Rider_Email,
+          Rider_MobileNum: rider.Rider_MobileNum,
+          Rider_Pass: rider.Rider_Pass,
+          Rider_Status: rider.Rider_Status
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase riders:', err);
+  }
+}
+
+export async function syncFirebaseAddressesToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('address').get();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const mysqlId = data.mysql_id || data.Add_ID || '';
+      const custId = data.Add_Cust_ID || data.cust_id;
+      if (custId) {
+        let addExist = null;
+        if (mysqlId) {
+          addExist = db.prepare('SELECT Add_ID FROM ADDRESS WHERE Add_ID = ?').get(Number(mysqlId));
+        }
+        if (!addExist) {
+          const result = db.prepare(`
+            INSERT INTO ADDRESS (Add_Cust_ID, Add_Province, Add_City, Add_Brgy, Add_Street, Add_UnitNum, Add_Building, Add_Landmark, Add_PostalCode, Add_Label)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            Number(custId),
+            data.Add_Province || '',
+            data.Add_City || '',
+            data.Add_Brgy || '',
+            data.Add_Street || '',
+            data.Add_UnitNum || '',
+            data.Add_Building || '',
+            data.Add_Landmark || '',
+            data.Add_PostalCode || '',
+            data.Add_Label || 'Home'
+          );
+          const newId = result.lastInsertRowid;
+          await dbFirestore.collection('address').doc(doc.id).update({
+            Add_ID: String(newId),
+            mysql_id: String(newId)
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase addresses:', err);
+  }
+}
+
+export async function syncFirebaseOrdersToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('orders').get();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const code = data.Order_Code || data.code;
+      if (code) {
+        const orderExist = db.prepare('SELECT Order_ID FROM orders WHERE Order_Code = ?').get(code) as any;
+        if (!orderExist) {
+          const custId = Number(data.Order_Cust_ID || 1);
+          const branchId = Number(data.Order_Brnch_ID || 1);
+          const addId = Number(data.Order_Add_ID || 1);
+          const staffId = data.Order_Staff_ID ? Number(data.Order_Staff_ID) : null;
+          
+          const result = db.prepare(`
+            INSERT INTO orders (
+              Order_Cust_ID, Order_Brnch_ID, Order_Add_ID, Order_Staff_ID, Order_Code, Order_Type, Order_Is_Bulk,
+              Order_Recipient_Name, Order_Recipient_Num, Order_Sched_Date, Order_Sched_Time_Slot, Order_Subtotal,
+              Order_Dlvry_Fee, Order_Disc_Amount, Order_Total_Amount, Order_Stat, Order_Date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            custId,
+            branchId,
+            addId,
+            staffId,
+            code,
+            data.Order_Type || 'Delivery',
+            data.Order_Is_Bulk || 'N',
+            data.Order_Recipient_Name || 'Customer',
+            data.Order_Recipient_Num || '09000000000',
+            data.Order_Sched_Date || null,
+            data.Order_Sched_Time_Slot || null,
+            Number(data.Order_Subtotal || 0),
+            Number(data.Order_Dlvry_Fee || 0),
+            Number(data.Order_Disc_Amount || 0),
+            Number(data.Order_Total_Amount || 0),
+            data.Order_Stat || 'Pending',
+            data.Order_Date || new Date().toISOString().slice(0, 19).replace('T', ' ')
+          );
+          const newId = result.lastInsertRowid;
+          await dbFirestore.collection('orders').doc(doc.id).update({
+            Order_ID: String(newId),
+            mysql_id: String(newId)
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase orders:', err);
+  }
+}
+
+export async function syncFirebaseOrderItemsToMySql() {
+  if (!dbFirestore) return;
+  try {
+    const snapshot = await dbFirestore.collection('order_item').get();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const orderId = Number(data.Order_ID);
+      const itemId = Number(data.OItem_ID);
+      if (orderId && itemId) {
+        const exist = db.prepare('SELECT Order_ID FROM ORDER_ITEM WHERE Order_ID = ? AND OItem_ID = ?').get(orderId, itemId);
+        if (!exist) {
+          db.prepare(`
+            INSERT INTO ORDER_ITEM (Order_ID, OItem_ID, OItem_Menu_ID, OItem_Base_Price, OItem_Custom_Total, OItem_Unit_Price, OItem_Quantity, OItem_Special_Instruct)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            orderId,
+            itemId,
+            Number(data.OItem_Menu_ID || 1),
+            Number(data.OItem_Base_Price || 0),
+            Number(data.OItem_Custom_Total || 0),
+            Number(data.OItem_Unit_Price || 0),
+            Number(data.OItem_Quantity || 1),
+            data.OItem_Special_Instruct || ''
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing Firebase order items:', err);
+  }
+}

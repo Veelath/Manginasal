@@ -5,7 +5,18 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-import { initDb, syncFirebaseCustomersToMySql, syncFirebaseMenuToMySql, syncFirebaseBranchesToMySql } from './server/db_sqlite.js';
+import { 
+  initDb, 
+  syncFirebaseCustomersToMySql, 
+  syncFirebaseMenuToMySql, 
+  syncFirebaseBranchesToMySql,
+  syncFirebaseManagersToMySql,
+  syncFirebaseStaffToMySql,
+  syncFirebaseRidersToMySql,
+  syncFirebaseAddressesToMySql,
+  syncFirebaseOrdersToMySql,
+  syncFirebaseOrderItemsToMySql
+} from './server/db_sqlite.js';
 import { authRouter } from './server/routes_auth.js';
 import { apiRouter } from './server/routes_api.js';
 import { htmlRouter } from './server/routes_html.js';
@@ -27,6 +38,12 @@ async function startServer() {
       await syncFirebaseCustomersToMySql();
       await syncFirebaseMenuToMySql();
       await syncFirebaseBranchesToMySql();
+      await syncFirebaseManagersToMySql();
+      await syncFirebaseStaffToMySql();
+      await syncFirebaseRidersToMySql();
+      await syncFirebaseAddressesToMySql();
+      await syncFirebaseOrdersToMySql();
+      await syncFirebaseOrderItemsToMySql();
       console.log('Initial Firebase bidirectional sync complete.');
     } catch (err) {
       console.error('Initial background Firebase sync failed:', err);
@@ -39,6 +56,12 @@ async function startServer() {
       await syncFirebaseCustomersToMySql();
       await syncFirebaseMenuToMySql();
       await syncFirebaseBranchesToMySql();
+      await syncFirebaseManagersToMySql();
+      await syncFirebaseStaffToMySql();
+      await syncFirebaseRidersToMySql();
+      await syncFirebaseAddressesToMySql();
+      await syncFirebaseOrdersToMySql();
+      await syncFirebaseOrderItemsToMySql();
       console.log('Periodic background Firestore alignment completed.');
     } catch (err) {
       console.error('Periodic Firestore alignment error:', err);
