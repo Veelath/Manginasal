@@ -134,9 +134,9 @@ try {
             $docs = $firestore->collection('orders')->documents();
             foreach ($docs as $doc) {
                 if ($doc->exists()) {
-                    $order = array_merge(['id' => $doc->id()], $doc->data());
-                    if (isset($order['branch_id']) && $order['branch_id'] == (string)$branch_id) {
-                        $fb_orders[] = $order;
+                    $orderRaw = array_merge(['id' => $doc->id()], $doc->data());
+                    if (!isset($orderRaw['branch_id']) || $orderRaw['branch_id'] == (string)$branch_id) {
+                        $fb_orders[] = normalizeOrder($orderRaw, $firestore);
                     }
                 }
             }
@@ -169,9 +169,10 @@ try {
             $docs = $firestore->collection('menu_item')->documents();
             foreach ($docs as $doc) {
                 if ($doc->exists()) {
-                    $item = array_merge(['id' => $doc->id()], $doc->data());
-                    if (!isset($item['branch_id']) || $item['branch_id'] == (string)$branch_id) {
-                        $fb_menu[] = $item;
+                    $itemRaw = array_merge(['id' => $doc->id()], $doc->data());
+                    $normalized = normalizeMenuItem($itemRaw);
+                    if ($normalized['branch_id'] === null || $normalized['branch_id'] == (string)$branch_id) {
+                        $fb_menu[] = $normalized;
                     }
                 }
             }
@@ -203,7 +204,7 @@ try {
                     if ($doc->exists()) {
                         $item = array_merge(['id' => $doc->id(), 'source' => ucfirst($col)], $doc->data());
                         if (isset($item['branch_id']) && $item['branch_id'] == (string)$branch_id) {
-                            $fb_workforce[] = $item;
+                            $fb_workforce[] = normalizeWorkforce($item);
                         }
                     }
                 }
@@ -281,7 +282,7 @@ try {
         try {
             $docs = $firestore->collection('staff')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Staff_ID'])) {
                     fbUpdate($firestore, 'staff', $doc->id(), ['first_name' => $fname, 'last_name' => $lname, 'email' => $email, 'mobile' => $mobile, 'role' => $role, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -306,7 +307,7 @@ try {
         try {
             $docs = $firestore->collection('rider')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Rider_ID'])) {
                     fbUpdate($firestore, 'rider', $doc->id(), ['first_name' => $fname, 'last_name' => $lname, 'email' => $email, 'mobile' => $mobile, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -344,7 +345,7 @@ try {
         try {
             $docs = $firestore->collection('menu_item')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Menu_ID'])) {
                     fbUpdate($firestore, 'menu_item', $doc->id(), ['name' => $name, 'description' => $desc, 'price' => (string)$price, 'category' => $cat, 'size' => $size, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -365,7 +366,7 @@ try {
         try {
             $docs = $firestore->collection('orders')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_order_id']) && $doc->data()['mysql_order_id'] == $order_id) {
+                if ($doc->exists() && fbMatchesId($doc, $order_id, ['Order_ID'])) {
                     fbUpdate($firestore, 'orders', $doc->id(), ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -386,7 +387,7 @@ try {
         try {
             $docs = $firestore->collection('menu_item')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $menu_id) {
+                if ($doc->exists() && fbMatchesId($doc, $menu_id, ['Menu_ID'])) {
                     fbUpdate($firestore, 'menu_item', $doc->id(), ['is_available' => $status, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -407,7 +408,7 @@ try {
         try {
             $docs = $firestore->collection('menu_item')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $menu_id) {
+                if ($doc->exists() && fbMatchesId($doc, $menu_id, ['Menu_ID'])) {
                     fbUpdate($firestore, 'menu_item', $doc->id(), ['stock_qty' => (string)$stock, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -432,8 +433,9 @@ try {
         try {
             $collection = ($source === 'Staff') ? 'staff' : 'rider';
             $docs = $firestore->collection($collection)->documents();
+            $idKeys = ($source === 'Staff') ? ['Staff_ID'] : ['Rider_ID'];
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, $idKeys)) {
                     fbDelete($firestore, $collection, $doc->id());
                     break;
                 }
@@ -458,7 +460,7 @@ try {
         try {
             $docs = $firestore->collection('menu_item')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Menu_ID'])) {
                     fbDelete($firestore, 'menu_item', $doc->id());
                     break;
                 }
@@ -484,7 +486,7 @@ try {
         try {
             $docs = $firestore->collection('branch')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Brnch_ID'])) {
                     fbUpdate($firestore, 'branch', $doc->id(), ['name' => $name, 'street' => $street, 'brgy' => $brgy, 'city' => $city, 'province' => $province, 'radius' => (string)$radius, 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -525,7 +527,7 @@ try {
             $docs = $firestore->collection('orders')->documents();
             $fb_order_id = null;
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_order_id']) && $doc->data()['mysql_order_id'] == $order_id) {
+                if ($doc->exists() && fbMatchesId($doc, $order_id, ['Order_ID'])) {
                     fbUpdate($firestore, 'orders', $doc->id(), ['status' => 'Delivering', 'updated_at' => date('Y-m-d H:i:s')]);
                     $fb_order_id = $doc->id();
                     break;
@@ -534,7 +536,10 @@ try {
             // 2. Update delivery record
             $deliveryDocs = $firestore->collection('delivery')->documents();
             foreach ($deliveryDocs as $doc) {
-                if ($doc->exists() && isset($doc->data()['order_id']) && $doc->data()['order_id'] == $fb_order_id) {
+                if ($doc->exists() && (
+                    (isset($doc->data()['order_id']) && $doc->data()['order_id'] == $fb_order_id) ||
+                    fbMatchesId($doc, $order_id, ['Dlvry_Order_ID'])
+                )) {
                     fbUpdate($firestore, 'delivery', $doc->id(), ['rider_id' => (string)$rider_id, 'status' => 'Delivering', 'pickup_time' => date('Y-m-d H:i:s')]);
                     break;
                 }
@@ -542,7 +547,7 @@ try {
             // 3. Update rider status
             $riderDocs = $firestore->collection('rider')->documents();
             foreach ($riderDocs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $rider_id) {
+                if ($doc->exists() && fbMatchesId($doc, $rider_id, ['Rider_ID'])) {
                     fbUpdate($firestore, 'rider', $doc->id(), ['status' => 'N', 'updated_at' => date('Y-m-d H:i:s')]);
                     break;
                 }

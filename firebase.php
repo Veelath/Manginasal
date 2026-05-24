@@ -72,6 +72,197 @@ function fbAdd($firestore, $collection, $data) {
     return $firestore->collection($collection)->add($data);
 }
 
+// Helper to check if a Firestore document matches a given MySQL ID (e.g. mysql_id, uppercase keys, or doc ID itself)
+function fbMatchesId($doc, $mysqlId, $idKeys = []) {
+    if (!$doc || !$doc->exists()) {
+        return false;
+    }
+    $data = $doc->data();
+    
+    // Check possible lowercase keys
+    if (isset($data['mysql_id']) && $data['mysql_id'] == $mysqlId) {
+        return true;
+    }
+    if (isset($data['mysql_order_id']) && $data['mysql_order_id'] == $mysqlId) {
+        return true;
+    }
+    if (isset($data['id']) && $data['id'] == $mysqlId) {
+        return true;
+    }
+    
+    // Check specific uppercase keys provided
+    foreach ($idKeys as $key) {
+        if (isset($data[$key]) && $data[$key] == $mysqlId) {
+            return true;
+        }
+    }
+    
+    // Check native Firestore document ID
+    if ($doc->id() == $mysqlId) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Data Normalization Utilities to bridge uppercase MySQL keys and lowercase/custom Firestore console entries
+function normalizeMenuItem($data) {
+    $mapped = [];
+    
+    $id = $data['Menu_ID'] ?? $data['mysql_id'] ?? $data['id'] ?? '';
+    $mapped['id'] = $id;
+    $mapped['Menu_ID'] = $id;
+    
+    $branchId = $data['Menu_Brnch_ID'] ?? $data['branch_id'] ?? null;
+    $mapped['Menu_Brnch_ID'] = ($branchId === 'NULL' || $branchId === null || $branchId === '') ? null : $branchId;
+    $mapped['branch_id'] = $mapped['Menu_Brnch_ID'];
+    
+    $name = $data['Menu_Name'] ?? $data['name'] ?? '';
+    $mapped['Menu_Name'] = $name;
+    $mapped['name'] = $name;
+    
+    $desc = $data['Menu_Description'] ?? $data['description'] ?? '';
+    $mapped['Menu_Description'] = $desc;
+    $mapped['description'] = $desc;
+    
+    $price = $data['Menu_Price'] ?? $data['price'] ?? '0.00';
+    $mapped['Menu_Price'] = $price;
+    $mapped['price'] = $price;
+    
+    $cat = $data['Menu_Category'] ?? $data['category'] ?? '';
+    $mapped['Menu_Category'] = $cat;
+    $mapped['category'] = $cat;
+    
+    $size = $data['Menu_Size'] ?? $data['size'] ?? '';
+    $mapped['Menu_Size'] = $size;
+    $mapped['size'] = $size;
+    
+    $img = $data['Menu_Image'] ?? $data['image'] ?? '';
+    $mapped['Menu_Image'] = $img;
+    $mapped['image'] = $img;
+    
+    $status = $data['Menu_Status'] ?? $data['status'] ?? 'Y';
+    $mapped['Menu_Status'] = $status;
+    $mapped['status'] = $status;
+    
+    $isAvail = $data['Is_Available'] ?? $data['is_available'] ?? $data['status'] ?? $data['Menu_Status'] ?? 'Y';
+    $mapped['Is_Available'] = $isAvail;
+    $mapped['is_available'] = $isAvail;
+    
+    $stock = $data['Stock_Qty'] ?? $data['stock_qty'] ?? 50;
+    $mapped['Stock_Qty'] = (int)$stock;
+    $mapped['stock_qty'] = (int)$stock;
+    
+    return $mapped;
+}
+
+function normalizeOrder($data, $firestore = null) {
+    $mapped = [];
+    
+    $id = $data['id'] ?? $data['Order_ID'] ?? '';
+    $mapped['id'] = $id;
+    $mapped['Order_ID'] = $id;
+    
+    $code = $data['order_code'] ?? $data['Order_Code'] ?? '';
+    $mapped['Order_Code'] = $code;
+    $mapped['order_code'] = $code;
+    
+    $custId = $data['customer_id'] ?? $data['Order_Cust_ID'] ?? '';
+    $mapped['Order_Cust_ID'] = $custId;
+    $mapped['customer_id'] = $custId;
+    
+    $branchId = $data['branch_id'] ?? $data['Order_Brnch_ID'] ?? '';
+    $mapped['Order_Brnch_ID'] = $branchId;
+    $mapped['branch_id'] = $branchId;
+    
+    $type = $data['type'] ?? $data['Order_Type'] ?? 'Dine-In';
+    $mapped['Order_Type'] = $type;
+    $mapped['type'] = $type;
+    
+    $rcpName = $data['recipient_name'] ?? $data['Order_Recipient_Name'] ?? '';
+    $mapped['Order_Recipient_Name'] = $rcpName;
+    $mapped['recipient_name'] = $rcpName;
+    
+    $rcpNum = $data['recipient_num'] ?? $data['Order_Recipient_Num'] ?? '';
+    $mapped['Order_Recipient_Num'] = $rcpNum;
+    $mapped['recipient_num'] = $rcpNum;
+    
+    $total = $data['total'] ?? $data['Order_Total_Amount'] ?? '0.00';
+    $mapped['Order_Total_Amount'] = $total;
+    $mapped['total'] = $total;
+    
+    $status = $data['status'] ?? $data['Order_Stat'] ?? 'Pending';
+    $mapped['Order_Stat'] = $status;
+    $mapped['status'] = $status;
+    
+    $date = $data['created_at'] ?? $data['Order_Date'] ?? date('Y-m-d H:i:s');
+    $mapped['Order_Date'] = $date;
+    $mapped['created_at'] = $date;
+    
+    $recipParts = explode(' ', $rcpName, 2);
+    $mapped['Cust_FName'] = $recipParts[0] ?? 'Guest';
+    $mapped['Cust_LName'] = $recipParts[1] ?? 'Customer';
+    
+    $mapped['Pay_Method'] = 'Cash';
+    $mapped['Pay_Status'] = 'Pending';
+    $mapped['Rider_FName'] = '';
+    $mapped['Rider_LName'] = '';
+    
+    if ($firestore) {
+        try {
+            $payDocs = $firestore->collection('payment')->documents();
+            foreach ($payDocs as $payDoc) {
+                if ($payDoc->exists()) {
+                    $pData = $payDoc->data();
+                    if (isset($pData['order_id']) && $pData['order_id'] == $id) {
+                        $mapped['Pay_Method'] = $pData['method'] ?? $pData['Pay_Method'] ?? 'Cash';
+                        $mapped['Pay_Status'] = $pData['status'] ?? $pData['Pay_Status'] ?? 'Pending';
+                        break;
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+        
+        try {
+            $delDocs = $firestore->collection('delivery')->documents();
+            foreach ($delDocs as $delDoc) {
+                if ($delDoc->exists()) {
+                    $delData = $delDoc->data();
+                    if (isset($delData['order_id']) && $delData['order_id'] == $id) {
+                        $riderId = $delData['rider_id'] ?? '';
+                        if (!empty($riderId)) {
+                            $rDocs = $firestore->collection('rider')->documents();
+                            foreach ($rDocs as $rDoc) {
+                                if ($rDoc->exists()) {
+                                    $rData = $rDoc->data();
+                                    if ($rDoc->id() == $riderId || (isset($rData['mysql_id']) && $rData['mysql_id'] == $riderId)) {
+                                        $mapped['Rider_FName'] = $rData['first_name'] ?? $rData['Rider_FName'] ?? '';
+                                        $mapped['Rider_LName'] = $rData['last_name'] ?? $rData['Rider_LName'] ?? '';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+    }
+    
+    return $mapped;
+}
+
+function normalizeWorkforce($data) {
+    if (isset($data['first_name'])) {
+        $data['fname'] = $data['first_name'];
+    }
+    if (isset($data['last_name'])) {
+        $data['lname'] = $data['last_name'];
+    }
+    return $data;
+}
+
 // Get all documents
 function fbGetAll($firestore, $collection) {
     $docs = $firestore->collection($collection)->documents();

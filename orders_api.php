@@ -184,6 +184,8 @@ try {
                 $firestore,
                 // ORDER data (Data Entry Interface)
                 [
+                    'mysql_order_id'    => (string)$order_id,
+                    'mysql_id'          => (string)$order_id,
                     'order_code'        => $order_code,
                     'customer_id'       => (string)$user_id,
                     'branch_id'         => (string)$branch_id,
@@ -198,12 +200,16 @@ try {
                 $fb_order_items,
                 // PAYMENT data
                 [
+                    'mysql_order_id'    => (string)$order_id,
+                    'mysql_id'          => (string)$order_id,
                     'method'  => $payment_method,
                     'amount'  => (string)$total,
                     'status'  => 'Pending',
                 ],
                 // DELIVERY data
                 [
+                    'mysql_order_id'    => (string)$order_id,
+                    'mysql_id'          => (string)$order_id,
                     'address'    => $manual_address ? ($manual_address['street'] . ', ' . $manual_address['city']) : '',
                     'status'     => 'Pending',
                     'rider_id'   => '',
@@ -311,22 +317,22 @@ try {
         try {
             $docs = $firestore->collection('orders')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists()) {
-                    $orderData = $doc->data();
-                    if (isset($orderData['mysql_order_id']) && $orderData['mysql_order_id'] == $order_id) {
-                        fbUpdate($firestore, 'orders', $doc->id(), [
-                            'status'       => 'Completed',
-                            'completed_at' => date('Y-m-d H:i:s'),
-                        ]);
-                        // Update payment status in Firebase
-                        $payDocs = $firestore->collection('payment')->documents();
-                        foreach ($payDocs as $payDoc) {
-                            if ($payDoc->exists() && isset($payDoc->data()['order_id']) && $payDoc->data()['order_id'] === $doc->id()) {
-                                fbUpdate($firestore, 'payment', $payDoc->id(), ['status' => 'Paid']);
-                            }
+                if ($doc->exists() && fbMatchesId($doc, $order_id, ['Order_ID'])) {
+                    fbUpdate($firestore, 'orders', $doc->id(), [
+                        'status'       => 'Completed',
+                        'completed_at' => date('Y-m-d H:i:s'),
+                    ]);
+                    // Update payment status in Firebase
+                    $payDocs = $firestore->collection('payment')->documents();
+                    foreach ($payDocs as $payDoc) {
+                        if ($payDoc->exists() && (
+                            (isset($payDoc->data()['order_id']) && $payDoc->data()['order_id'] === $doc->id()) ||
+                            fbMatchesId($payDoc, $order_id, ['Pay_Order_ID'])
+                        )) {
+                            fbUpdate($firestore, 'payment', $payDoc->id(), ['status' => 'Paid']);
                         }
-                        break;
                     }
+                    break;
                 }
             }
         } catch (Exception $fbErr) {
@@ -357,7 +363,7 @@ try {
         try {
             $deliveryDocs = $firestore->collection('delivery')->documents();
             foreach ($deliveryDocs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_order_id']) && $doc->data()['mysql_order_id'] == $order_id) {
+                if ($doc->exists() && fbMatchesId($doc, $order_id, ['Dlvry_Order_ID'])) {
                     fbUpdate($firestore, 'delivery', $doc->id(), ['eta' => $eta_datetime]);
                     break;
                 }
@@ -444,8 +450,10 @@ try {
 
             if ($collection) {
                 $docs = $firestore->collection($collection)->documents();
+                $idKeysMap = ['customer' => ['Cust_ID'], 'rider' => ['Rider_ID'], 'branch_manager' => ['Mgr_ID'], 'system_admin' => ['Admin_ID'], 'staff' => ['Staff_ID']];
+                $idKeys = $idKeysMap[$collection] ?? [];
                 foreach ($docs as $doc) {
-                    if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $user_id) {
+                    if ($doc->exists() && fbMatchesId($doc, $user_id, $idKeys)) {
                         fbUpdate($firestore, $collection, $doc->id(), [
                             'first_name'  => $fname,
                             'last_name'   => $lname,
@@ -516,7 +524,7 @@ try {
         try {
             $docs = $firestore->collection('address')->documents();
             foreach ($docs as $doc) {
-                if ($doc->exists() && isset($doc->data()['mysql_id']) && $doc->data()['mysql_id'] == $id) {
+                if ($doc->exists() && fbMatchesId($doc, $id, ['Add_ID'])) {
                     fbDelete($firestore, 'address', $doc->id());
                     break;
                 }
