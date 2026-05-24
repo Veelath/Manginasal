@@ -1,0 +1,15 @@
+{
+    "name": "manginasal/digital-platform",
+    "description": "Mang Inasal Digital order management with SQL and Firebase Firestore sync engine",
+    "type": "project",
+    "require": {
+        "php": ">=7.4|^8.0",
+        "kreait/firebase-php": "^5.26|^6.0|^7.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "google/geo-compiler": true
+        }
+    }
+}

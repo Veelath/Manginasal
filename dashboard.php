@@ -225,6 +225,31 @@ $user_id = $_SESSION['user_id'];
     },
 
     init() {
+        // Intercept all fetch requests to automatically retrieve and store Firebase/Firestore status information
+        const originalFetch = window.fetch;
+        const self = this;
+        window.fetch = async function(...args) {
+            const res = await originalFetch(...args);
+            try {
+                const clone = res.clone();
+                const data = await clone.json();
+                if (data && data.firebase_status) {
+                    window.__lastFirebaseStatus = data.firebase_status;
+                    if (self.message && typeof self.message === 'object') {
+                        self.message.firebase_status = data.firebase_status;
+                    }
+                }
+            } catch(e) {}
+            return res;
+        };
+
+        // Attach watcher on dynamic toasts to auto-enrich actions with Firebase credentials status
+        this.$watch('message', (newVal) => {
+            if (newVal && typeof newVal === 'object' && !newVal.firebase_status && window.__lastFirebaseStatus) {
+                newVal.firebase_status = window.__lastFirebaseStatus;
+            }
+        });
+
         this.fetchProfile();
         this.$watch('selectedCategory', () => this.$nextTick(() => lucide.createIcons()));
         this.$watch('currentCarousel', () => this.$nextTick(() => lucide.createIcons()));
@@ -3813,11 +3838,23 @@ $user_id = $_SESSION['user_id'];
         </div>
 
         <!-- Messages Toast -->
-        <div x-show="message" x-transition x-cloak class="fixed bottom-8 right-8 z-[200]">
-            <div :class="message?.success ? 'bg-green-600' : 'bg-red-600'" class="text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
-                <i :data-lucide="message?.success ? 'check-circle' : 'alert-circle'" class="w-6 h-6"></i>
-                <span x-text="message?.text" class="font-bold"></span>
-                <button @click="message = null" class="ml-4 opacity-70 hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <div x-show="message" x-transition x-cloak class="fixed bottom-8 right-8 z-[200] max-w-sm sm:max-w-md">
+            <div :class="message?.success ? 'bg-green-600 border border-green-500' : 'bg-red-600 border border-red-500'" class="text-white px-6 py-4 rounded-2xl shadow-2xl flex flex-col gap-2 relative overflow-hidden">
+                <div class="flex items-center gap-3">
+                    <i :data-lucide="message?.success ? 'check-circle' : 'alert-circle'" class="w-6 h-6 shrink-0"></i>
+                    <span x-text="message?.text" class="font-bold flex-1"></span>
+                    <button @click="message = null" class="ml-4 opacity-70 hover:opacity-100 shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                <!-- Interactive Firebase/Firestore Connection Status & Helpful Diagnostic Alert -->
+                <template x-if="message?.firebase_status && !message.firebase_status.connected">
+                    <div class="mt-2 text-xs bg-black/30 p-4 rounded-xl border border-white/15 space-y-1.5 leading-normal">
+                        <div class="font-black text-[9px] uppercase tracking-wider text-yellow-300 flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-yellow-300"></i> FIRESTORE SYNC WARNING
+                        </div>
+                        <p class="text-[11px] font-medium text-white/95" x-text="message.firebase_status.error"></p>
+                        <div class="pt-1.5 border-t border-white/10 text-[10px] text-yellow-200/90 font-semibold" x-text="message.firebase_status.detailed_guide"></div>
+                    </div>
+                </template>
             </div>
         </div>
 

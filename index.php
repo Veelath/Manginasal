@@ -109,9 +109,21 @@
                             <p class="text-slate-500 text-sm" x-text="isResetMode ? 'Enter your email to receive a temporary password.' : (isLogin ? 'Fresh grilled meals are waiting for you.' : 'Join the Mang Inasal family today!')"></p>
                         </div>
                         <template x-if="message">
-                            <div :class="message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'" class="flex items-center gap-3 p-4 rounded-xl border text-sm font-medium">
-                                <i :data-lucide="message.type === 'success' ? 'check-circle-2' : 'alert-circle'" class="w-5 h-5 flex-shrink-0"></i>
-                                <span x-text="message.text"></span>
+                            <div class="space-y-2">
+                                <div :class="message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'" class="flex items-center gap-3 p-4 rounded-xl border text-sm font-medium">
+                                    <i :data-lucide="message.type === 'success' ? 'check-circle-2' : 'alert-circle'" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span x-text="message.text" class="flex-1"></span>
+                                </div>
+                                <!-- Firestore Connectivity/SDK Configuration Warning helper -->
+                                <template x-if="message.firebase_status && !message.firebase_status.connected">
+                                    <div class="bg-amber-50 border border-amber-250 text-amber-800 p-4 rounded-xl space-y-1.5 leading-normal">
+                                        <div class="font-black uppercase tracking-wider text-[9px] text-amber-700 flex items-center gap-1.5">
+                                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Firestore Offline-Fallback Enabled
+                                        </div>
+                                        <p class="text-xs font-semibold opacity-95" x-text="message.firebase_status.error"></p>
+                                        <p class="text-[10px] text-amber-900 border-t border-amber-200/50 pt-1.5 font-bold" x-text="message.firebase_status.detailed_guide"></p>
+                                    </div>
+                                </template>
                             </div>
                         </template>
                         <form @submit.prevent="handleSubmit" class="space-y-5">
@@ -471,7 +483,31 @@
                         console.error('Failed to fetch branches:', err);
                     }
                 },
-                init() {
+                 init() {
+                    // Intercept fetch to cache Firebase setup diagnostics for authentication alerts
+                    const originalFetch = window.fetch;
+                    const self = this;
+                    window.fetch = async function(...args) {
+                        const res = await originalFetch(...args);
+                        try {
+                            const clone = res.clone();
+                            const data = await clone.json();
+                            if (data && data.firebase_status) {
+                                window.__lastFirebaseStatus = data.firebase_status;
+                                if (self.message && typeof self.message === 'object') {
+                                    self.message.firebase_status = data.firebase_status;
+                                }
+                            }
+                        } catch(e) {}
+                        return res;
+                    };
+
+                    this.$watch('message', (newVal) => {
+                        if (newVal && typeof newVal === 'object' && !newVal.firebase_status && window.__lastFirebaseStatus) {
+                            newVal.firebase_status = window.__lastFirebaseStatus;
+                        }
+                    });
+
                     lucide.createIcons();
                     this.fetchBranches();
                 },
