@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "php -S 0.0.0.0:3000",
-    "build": "echo 'Static PHP build'",
-    "preview": "php -S 0.0.0.0:3000",
+    "dev": "tsx server.ts",
+    "build": "echo 'Built'",
+    "start": "tsx server.ts",
     "clean": "rm -rf dist",
-    "lint": "echo 'No lint needed for PHP'"
+    "lint": "echo 'No lint needed'"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -16,8 +16,11 @@
     "@vitejs/plugin-react": "^6.0.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "firebase-admin": "^13.10.0",
     "lucide-react": "^1.16.0",
     "motion": "^12.39.0",
     "mysql2": "^3.22.3",
